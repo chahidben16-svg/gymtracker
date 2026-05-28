@@ -1,6 +1,6 @@
 // data.js — fitness app data model, XP math, demo data, persistence
 
-const STORAGE_KEY = "gym_data_v3";
+const STORAGE_KEY = "gym_data_v5";
 
 const MUSCLES = [
   { id: "borst",      name: "Borst",      hue: 18 },
@@ -114,7 +114,7 @@ function demoData() {
     return d.toISOString();
   };
   return {
-    user: { name: "Sam", since: day(120) },
+    user: { name: "Chahid", since: day(120) },
     xp: {
       borst:     2050,
       rug:       1380,
@@ -168,13 +168,21 @@ function demoData() {
 }
 
 // Persistence ----------------------------------------------------------------
+function emptyData() {
+  return {
+    user: { name: "Chahid", since: new Date().toISOString() },
+    xp: { borst: 0, rug: 0, benen: 0, armen: 0, schouders: 0, core: 0 },
+    workouts: [],
+  };
+}
+
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return demoData();
+    if (!raw) return emptyData();
     return JSON.parse(raw);
   } catch (e) {
-    return demoData();
+    return emptyData();
   }
 }
 function saveData(d) {
@@ -186,11 +194,7 @@ function resetData() {
   return fresh;
 }
 function clearAll() {
-  const empty = {
-    user: { name: "Sam", since: new Date().toISOString() },
-    xp: { borst: 0, rug: 0, benen: 0, armen: 0, schouders: 0, core: 0 },
-    workouts: [],
-  };
+  const empty = emptyData();
   saveData(empty);
   return empty;
 }
@@ -218,6 +222,6 @@ function formatDate(iso) {
 Object.assign(window, {
   MUSCLES, EXERCISES, TIERS,
   xpForLevel, levelFromXP, levelProgress, setXP, tierForLevel,
-  loadData, saveData, resetData, clearAll, demoData,
+  loadData, saveData, resetData, clearAll, demoData, emptyData,
   exerciseById, totalLevel, totalXP, formatDate,
 });
