@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0d0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GymTracker" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>GymTracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ── RESET & BASE ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0d0d0f;
+      --bg2:      #16161a;
+      --bg3:      #1e1e24;
+      --border:   #2a2a33;
+      --text:     #e8e8f0;
+      --muted:    #6b6b80;
+      --accent:   #c8f135;
+      --accent2:  #ff6b35;
+      --radius:   14px;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body:    'DM Sans', sans-serif;
+    }
+    html, body {
+      height: 100%; background: var(--bg);
+      color: var(--text); font-family: var(--font-body);
+      font-size: 15px; overflow: hidden;
+    }
+
+    /* ── LAYOUT ───────────────────────────────────────────────── */
+    #app { display: flex; flex-direction: column; height: 100dvh; }
+    .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px 80px; }
+    .screen.active { display: block; }
+
+    /* ── BOTTOM NAV ───────────────────────────────────────────── */
+    nav {
+      display: flex; justify-content: space-around; align-items: center;
+      background: var(--bg2); border-top: 1px solid var(--border);
+      padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    }
+    .nav-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      background: none; border: none; color: var(--muted);
+      font-family: var(--font-body); font-size: 10px; font-weight: 500;
+      padding: 4px 16px; cursor: pointer; transition: color .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-btn svg { width: 22px; height: 22px; }
+    .nav-btn.active { color: var(--accent); }
+
+    /* ── TYPOGRAPHY ───────────────────────────────────────────── */
+    h1 { font-family: var(--font-display); font-size: 2.4rem; letter-spacing: .02em; line-height: 1; }
+    h2 { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: .02em; }
+    h3 { font-size: .85rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+    /* ── CARDS ────────────────────────────────────────────────── */
+    .card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+    }
+    .card-row { display: flex; align-items: center; justify-content: space-between; }
+
+    /* ── XP BAR ───────────────────────────────────────────────── */
+    .xp-bar-wrap { background: var(--bg3); border-radius: 99px; height: 6px; overflow: hidden; }
+    .xp-bar-fill { height: 100%; border-radius: 99px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+
+    /* ── MUSCLE GRID ──────────────────────────────────────────── */
+    .muscle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .muscle-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px; cursor: pointer;
+      transition: transform .12s, border-color .12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .muscle-card:active { transform: scale(.97); }
+    .muscle-card .muscle-name { font-family: var(--font-display); font-size: 1.3rem; margin: 6px 0 4px; }
+    .muscle-card .level-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: .75rem; font-weight: 600; color: var(--muted);
+    }
+
+    /* ── BUTTONS ──────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border: none; border-radius: 10px; padding: 12px 20px;
+      font-family: var(--font-body); font-size: .9rem; font-weight: 600;
+      cursor: pointer; transition: opacity .12s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { opacity: .8; transform: scale(.98); }
+    .btn-primary { background: var(--accent); color: #0d0d0f; }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: #ff4444; color: #fff; }
+    .btn-full { width: 100%; }
+
+    /* ── SET ROW ──────────────────────────────────────────────── */
+    .set-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg3); border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 8px;
+    }
+    .set-num { font-family: var(--font-display); font-size: 1.1rem; color: var(--muted); min-width: 24px; }
+    .set-inputs { display: flex; gap: 6px; flex: 1; }
+    .set-input {
+      flex: 1; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-family: var(--font-body); font-size: .95rem; font-weight: 500;
+      padding: 8px; text-align: center; outline: none;
+      -webkit-appearance: none;
+    }
+    .set-input:focus { border-color: var(--accent); }
+    .set-label { font-size: .7rem; color: var(--muted); text-align: center; margin-top: 2px; }
+    .set-delete {
+      background: none; border: none; color: var(--muted);
+      font-size: 1.1rem; cursor: pointer; padding: 4px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── SELECT ───────────────────────────────────────────────── */
+    select {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: var(--font-body); font-size: .95rem;
+      padding: 12px; outline: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b80' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center;
+    }
+
+    /* ── INPUT ────────────────────────────────────────────────── */
+    input[type=text] {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: var(--font-body); font-size: .95rem;
+      padding: 12px; outline: none;
+    }
+    input[type=text]:focus { border-color: var(--accent); }
+
+    /* ── HISTORY ──────────────────────────────────────────────── */
+    .history-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .history-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .history-muscle { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+    .history-date { font-size: .75rem; color: var(--muted); margin-left: auto; }
+    .history-sets { font-size: .82rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── STATS ────────────────────────────────────────────────── */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-box { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+    .stat-val { font-family: var(--font-display); font-size: 2rem; }
+    .stat-lbl { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── MODAL ────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.7);
+      z-index: 200; display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--bg2); border-radius: 20px 20px 0 0;
+      border: 1px solid var(--border); border-bottom: none;
+      width: 100%; max-height: 90dvh; overflow-y: auto;
+      padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+      transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 99px; margin: 0 auto 16px; }
+
+    /* ── XP TOAST ─────────────────────────────────────────────── */
+    .xp-toast {
+      position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px);
+      background: var(--accent); color: #0d0d0f;
+      font-family: var(--font-display); font-size: 1.3rem; letter-spacing: .04em;
+      padding: 8px 20px; border-radius: 99px;
+      opacity: 0; pointer-events: none; transition: all .3s; z-index: 300;
+    }
+    .xp-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── MISC ─────────────────────────────────────────────────── */
+    .spacer { height: 12px; }
+    .tag {
+      display: inline-block; padding: 2px 10px; border-radius: 99px;
+      font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    }
+    .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: .9rem; }
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══ SCREEN: HOME ═══════════════════════════════════════════ -->
+  <div id="screen-home" class="screen active">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;padding-top:8px">
+      <div>
+        <h3>Welkom terug</h3>
+        <h1 id="home-name">Sam</h1>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:.75rem;color:var(--muted)">Totaal level</div>
+        <div id="home-total-level" style="font-family:var(--font-display);font-size:2.2rem;line-height:1"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-row" style="margin-bottom:8px">
+        <span style="font-size:.8rem;color:var(--muted)">Totale XP</span>
+        <span id="home-total-xp" style="font-family:var(--font-display);font-size:1.1rem;color:var(--accent)"></span>
+      </div>
+      <div id="home-tier" style="font-size:.8rem;font-weight:600"></div>
+    </div>
+
+    <h3 style="margin-bottom:10px">Spiergroepen</h3>
+    <div class="muscle-grid" id="muscle-grid"></div>
+
+    <div class="spacer"></div>
+    <h3 style="margin-bottom:10px">Recente workouts</h3>
+    <div id="recent-list"></div>
+  </div>
+
+  <!-- ═══ SCREEN: LOG ════════════════════════════════════════════ -->
+  <div id="screen-log" class="screen">
+    <h1 style="margin-bottom:16px;padding-top:8px">Log Workout</h1>
+
+    <div class="card">
+      <h3 style="margin-bottom:8px">Spiergroep</h3>
+      <select id="log-muscle"></select>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:8px">Oefening</h3>
+      <select id="log-exercise"></select>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h3>Sets</h3>
+      <button class="btn btn-secondary" style="padding:6px 14px;font-size:.8rem" onclick="addSet()">+ Set</button>
+    </div>
+    <div id="sets-list"></div>
+
+    <div class="spacer"></div>
+    <button class="btn btn-primary btn-full" style="font-size:1rem;padding:15px" onclick="saveWorkout()">
+      💪 Workout Opslaan
+    </button>
+  </div>
+
+  <!-- ═══ SCREEN: HISTORY ════════════════════════════════════════ -->
+  <div id="screen-history" class="screen">
+    <h1 style="margin-bottom:16px;padding-top:8px">Historie</h1>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ═══ SCREEN: STATS ══════════════════════════════════════════ -->
+  <div id="screen-stats" class="screen">
+    <h1 style="margin-bottom:16px;padding-top:8px">Stats</h1>
+
+    <div class="stat-grid" style="margin-bottom:16px">
+      <div class="stat-box">
+        <div class="stat-val" id="stat-workouts">0</div>
+        <div class="stat-lbl">Workouts totaal</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-sets">0</div>
+        <div class="stat-lbl">Sets totaal</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-xp">0</div>
+        <div class="stat-lbl">Totale XP</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-level">0</div>
+        <div class="stat-lbl">Totaal level</div>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:10px">Per spiergroep</h3>
+    <div id="stats-muscles"></div>
+
+    <div class="spacer"></div>
+    <div class="divider"></div>
+    <h3 style="margin-bottom:10px">Instellingen</h3>
+    <div class="card">
+      <div style="margin-bottom:12px">
+        <h3 style="margin-bottom:6px">Jouw naam</h3>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="setting-name" placeholder="Naam" />
+          <button class="btn btn-secondary" style="white-space:nowrap" onclick="saveName()">Opslaan</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <button class="btn btn-secondary btn-full" onclick="doReset()" style="margin-top:8px">🔄 Demo data herstellen</button>
+    </div>
+  </div>
+
+  <!-- ═══ BOTTOM NAV ════════════════════════════════════════════ -->
+  <nav>
+    <button class="nav-btn active" onclick="goTo('home')" id="nav-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Home
+    </button>
+    <button class="nav-btn" onclick="goTo('log')" id="nav-log">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      Log
+    </button>
+    <button class="nav-btn" onclick="goTo('history')" id="nav-history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a10 10 0 1 0 10 10"/><polyline points="12 6 12 12 16 14"/><path d="M22 2 12 12"/>
+      </svg>
+      Historie
+    </button>
+    <button class="nav-btn" onclick="goTo('stats')" id="nav-stats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      Stats
+    </button>
+  </nav>
+</div>
+
+<!-- XP Toast -->
+<div class="xp-toast" id="xp-toast">+0 XP</div>
+
+<!-- Workout detail modal -->
+<div class="modal-overlay" id="workout-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="modal-content"></div>
+    <div class="spacer"></div>
+    <button class="btn btn-danger btn-full" onclick="deleteWorkout()">🗑 Workout verwijderen</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-secondary btn-full" onclick="closeModal()">Sluiten</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let DB = loadData();
+let currentSets = [];
+let activeModal = null;
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+function goTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  document.getElementById('nav-' + screen).classList.add('active');
+  if (screen === 'home') renderHome();
+  if (screen === 'log') renderLog();
+  if (screen === 'history') renderHistory();
+  if (screen === 'stats') renderStats();
+}
+
+// ── HOME ───────────────────────────────────────────────────────────────────
+function renderHome() {
+  document.getElementById('home-name').textContent = DB.user.name;
+  const lv = totalLevel(DB.xp);
+  document.getElementById('home-total-level').textContent = lv;
+  document.getElementById('home-total-xp').textContent = totalXP(DB.xp).toLocaleString('nl') + ' XP';
+  const tier = tierForLevel(Math.round(lv / MUSCLES.length));
+  document.getElementById('home-tier').innerHTML =
+    `<span class="tag" style="background:${tier.color}20;color:${tier.color}">${tier.name}</span>`;
+
+  // Muscle grid
+  const grid = document.getElementById('muscle-grid');
+  grid.innerHTML = '';
+  MUSCLES.forEach(m => {
+    const xp = DB.xp[m.id] || 0;
+    const prog = levelProgress(xp);
+    const color = `hsl(${m.hue},70%,55%)`;
+    const card = document.createElement('div');
+    card.className = 'muscle-card';
+    card.innerHTML = `
+      <div style="width:32px;height:4px;background:${color};border-radius:2px"></div>
+      <div class="muscle-name">${m.name}</div>
+      <div class="level-badge">
+        <span style="color:${color}">LV ${prog.level}</span>
+        <span>· ${xp.toLocaleString('nl')} XP</span>
+      </div>
+      <div class="spacer" style="height:8px"></div>
+      <div class="xp-bar-wrap">
+        <div class="xp-bar-fill" style="width:${(prog.into*100).toFixed(1)}%;background:${color}"></div>
+      </div>
+    `;
+    card.onclick = () => goToMuscleLog(m.id);
+    grid.appendChild(card);
+  });
+
+  // Recent workouts
+  const list = document.getElementById('recent-list');
+  const recent = [...DB.workouts].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,4);
+  list.innerHTML = recent.length ? '' : '<div class="empty">Nog geen workouts gelogd.</div>';
+  recent.forEach(w => list.appendChild(workoutCard(w)));
+}
+
+// ── LOG ────────────────────────────────────────────────────────────────────
+function renderLog() {
+  const sel = document.getElementById('log-muscle');
+  const cur = sel.value;
+  sel.innerHTML = MUSCLES.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+  if (cur) sel.value = cur;
+  renderExerciseSelect();
+  if (currentSets.length === 0) addSet();
+  renderSets();
+}
+
+function renderExerciseSelect() {
+  const muscleId = document.getElementById('log-muscle').value || MUSCLES[0].id;
+  const exSel = document.getElementById('log-exercise');
+  const cur = exSel.value;
+  exSel.innerHTML = (EXERCISES[muscleId] || []).map(e =>
+    `<option value="${e.id}">${e.name}</option>`).join('');
+  if (cur) exSel.value = cur;
+  // Reset sets when muscle changes
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('log-muscle').addEventListener('change', () => {
+    currentSets = [];
+    renderExerciseSelect();
+    addSet();
+    renderSets();
+  });
+  document.getElementById('log-exercise').addEventListener('change', () => {
+    currentSets = [];
+    addSet();
+    renderSets();
+  });
+});
+
+function goToMuscleLog(muscleId) {
+  goTo('log');
+  document.getElementById('log-muscle').value = muscleId;
+  renderExerciseSelect();
+  currentSets = [];
+  addSet();
+  renderSets();
+}
+
+function addSet() {
+  const muscleId = document.getElementById('log-muscle')?.value || MUSCLES[0].id;
+  const exId = document.getElementById('log-exercise')?.value;
+  const ex = exerciseById(muscleId, exId) || (EXERCISES[muscleId] || [])[0];
+  const last = currentSets[currentSets.length - 1];
+  currentSets.push({
+    reps: last ? last.reps : (ex ? ex.defaultReps : 10),
+    weight: last ? last.weight : (ex ? ex.defaultWeight : 0),
+    unit: ex ? ex.unit : 'kg',
+  });
+  renderSets();
+}
+
+function renderSets() {
+  const list = document.getElementById('sets-list');
+  if (!list) return;
+  list.innerHTML = '';
+  currentSets.forEach((set, i) => {
+    const row = document.createElement('div');
+    row.className = 'set-row';
+    const isTime = set.unit === 'sec';
+    const isBW   = set.unit === 'bw';
+    row.innerHTML = `
+      <div class="set-num">${i+1}</div>
+      <div class="set-inputs" style="flex-direction:column;gap:2px">
+        <div style="display:flex;gap:6px">
+          <div style="flex:1">
+            <input class="set-input" type="number" inputmode="decimal" value="${set.reps}"
+              onchange="updateSet(${i},'reps',this.value)" />
+            <div class="set-label">${isTime ? 'sec' : 'reps'}</div>
+          </div>
+          ${!isBW ? `<div style="flex:1">
+            <input class="set-input" type="number" inputmode="decimal" value="${set.weight}"
+              onchange="updateSet(${i},'weight',this.value)" />
+            <div class="set-label">${set.unit}</div>
+          </div>` : ''}
+          <div style="flex:1;display:flex;align-items:center;justify-content:center">
+            <span style="font-size:.75rem;color:var(--accent);font-weight:700">
+              +${setXP(set, set.unit)} XP
+            </span>
+          </div>
+        </div>
+      </div>
+      <button class="set-delete" onclick="removeSet(${i})">✕</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function updateSet(i, key, val) {
+  currentSets[i][key] = Number(val);
+  // Re-render just XP display
+  renderSets();
+}
+
+function removeSet(i) {
+  currentSets.splice(i, 1);
+  renderSets();
+}
+
+function saveWorkout() {
+  if (currentSets.length === 0) { alert('Voeg eerst een set toe.'); return; }
+  const muscleId = document.getElementById('log-muscle').value;
+  const exId = document.getElementById('log-exercise').value;
+  const ex = exerciseById(muscleId, exId);
+
+  const sets = currentSets.map(s => ({
+    exercise: exId, reps: s.reps, weight: s.weight, unit: s.unit,
+  }));
+
+  const gainedXP = sets.reduce((sum, s) => sum + setXP(s, s.unit), 0);
+
+  const workout = {
+    id: 'w' + Date.now(),
+    date: new Date().toISOString(),
+    muscle: muscleId,
+    sets,
+  };
+
+  DB.workouts.push(workout);
+  DB.xp[muscleId] = (DB.xp[muscleId] || 0) + gainedXP;
+  saveData(DB);
+
+  showXPToast(gainedXP);
+  currentSets = [];
+  setTimeout(() => { goTo('home'); }, 400);
+}
+
+// ── HISTORY ────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const sorted = [...DB.workouts].sort((a,b) => new Date(b.date)-new Date(a.date));
+  list.innerHTML = sorted.length ? '' : '<div class="empty">Nog geen workouts gelogd.</div>';
+  sorted.forEach(w => list.appendChild(workoutCard(w)));
+}
+
+function workoutCard(w) {
+  const m = MUSCLES.find(x => x.id === w.muscle) || { name: w.muscle, hue: 200 };
+  const color = `hsl(${m.hue},70%,55%)`;
+  const totalXpW = w.sets.reduce((sum, s) => sum + setXP(s, s.unit), 0);
+
+  const setsSummary = w.sets.slice(0,3).map(s => {
+    const ex = exerciseById(w.muscle, s.exercise);
+    const name = ex ? ex.name : s.exercise;
+    if (s.unit === 'bw') return `${name} ${s.reps}r`;
+    if (s.unit === 'sec') return `${name} ${s.reps}s`;
+    return `${name} ${s.reps}×${s.weight}${s.unit}`;
+  }).join(' · ') + (w.sets.length > 3 ? ` +${w.sets.length-3}` : '');
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.style.cursor = 'pointer';
+  card.innerHTML = `
+    <div class="history-header">
+      <div class="history-dot" style="background:${color}"></div>
+      <span class="history-muscle" style="color:${color}">${m.name}</span>
+      <span style="font-size:.75rem;color:var(--accent)">+${totalXpW} XP</span>
+      <span class="history-date">${formatDate(w.date)}</span>
+    </div>
+    <div class="history-sets">${setsSummary || '—'}</div>
+  `;
+  card.onclick = () => openWorkoutModal(w.id);
+  return card;
+}
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function openWorkoutModal(id) {
+  activeModal = id;
+  const w = DB.workouts.find(x => x.id === id);
+  if (!w) return;
+  const m = MUSCLES.find(x => x.id === w.muscle) || { name: w.muscle, hue: 200 };
+  const color = `hsl(${m.hue},70%,55%)`;
+
+  let html = `<h2 style="color:${color};margin-bottom:4px">${m.name}</h2>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">${new Date(w.date).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})}</div>`;
+
+  w.sets.forEach((s, i) => {
+    const ex = exerciseById(w.muscle, s.exercise);
+    const name = ex ? ex.name : s.exercise;
+    const val = s.unit === 'bw' ? `${s.reps} reps` : s.unit === 'sec' ? `${s.reps} sec` : `${s.reps} × ${s.weight} ${s.unit}`;
+    html += `<div class="set-row">
+      <div class="set-num">${i+1}</div>
+      <div style="flex:1"><strong>${name}</strong><br><span style="font-size:.82rem;color:var(--muted)">${val}</span></div>
+      <span style="font-size:.75rem;color:var(--accent)">+${setXP(s,s.unit)} XP</span>
+    </div>`;
+  });
+
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('workout-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('workout-modal').classList.remove('open');
+  activeModal = null;
+}
+
+function deleteWorkout() {
+  if (!activeModal) return;
+  const w = DB.workouts.find(x => x.id === activeModal);
+  if (!w) return;
+  const xpLost = w.sets.reduce((sum, s) => sum + setXP(s, s.unit), 0);
+  DB.xp[w.muscle] = Math.max(0, (DB.xp[w.muscle] || 0) - xpLost);
+  DB.workouts = DB.workouts.filter(x => x.id !== activeModal);
+  saveData(DB);
+  closeModal();
+  renderHistory();
+  renderHome();
+}
+
+document.getElementById('workout-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ── STATS ──────────────────────────────────────────────────────────────────
+function renderStats() {
+  document.getElementById('stat-workouts').textContent = DB.workouts.length;
+  document.getElementById('stat-sets').textContent = DB.workouts.reduce((s,w) => s + w.sets.length, 0);
+  document.getElementById('stat-xp').textContent = totalXP(DB.xp).toLocaleString('nl');
+  document.getElementById('stat-level').textContent = totalLevel(DB.xp);
+
+  const cont = document.getElementById('stats-muscles');
+  cont.innerHTML = '';
+  MUSCLES.forEach(m => {
+    const xp = DB.xp[m.id] || 0;
+    const prog = levelProgress(xp);
+    const color = `hsl(${m.hue},70%,55%)`;
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <div class="card-row" style="margin-bottom:8px">
+        <span style="font-family:var(--font-display);font-size:1.1rem;color:${color}">${m.name}</span>
+        <span style="font-size:.8rem;color:var(--muted)">LV <strong style="color:var(--text)">${prog.level}</strong> · ${xp.toLocaleString('nl')} XP</span>
+      </div>
+      <div class="xp-bar-wrap">
+        <div class="xp-bar-fill" style="width:${(prog.into*100).toFixed(1)}%;background:${color}"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;font-size:.7rem;color:var(--muted);margin-top:4px">
+        ${prog.intoXP} / ${prog.spanXP} XP naar LV ${prog.level+1}
+      </div>
+    `;
+    cont.appendChild(div);
+  });
+
+  document.getElementById('setting-name').value = DB.user.name;
+}
+
+function saveName() {
+  const val = document.getElementById('setting-name').value.trim();
+  if (!val) return;
+  DB.user.name = val;
+  saveData(DB);
+  document.getElementById('home-name').textContent = val;
+  alert('Naam opgeslagen!');
+}
+
+function doReset() {
+  if (confirm('Demo data herstellen? Jouw data gaat verloren.')) {
+    DB = resetData();
+    goTo('home');
+  }
+}
+
+// ── XP TOAST ───────────────────────────────────────────────────────────────
+function showXPToast(xp) {
+  const el = document.getElementById('xp-toast');
+  el.textContent = `+${xp} XP`;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+renderHome();
+</script>
+</body>
+</html>
