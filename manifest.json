@@ -4,8 +4,8 @@
   "description": "Track je workouts en level op per spiergroep",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0d0d0f",
-  "theme_color": "#0d0d0f",
+  "background_color": "#f5f5f0",
+  "theme_color": "#f5f5f0",
   "orientation": "portrait",
   "icons": [
     {
