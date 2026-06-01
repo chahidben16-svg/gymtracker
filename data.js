@@ -41,7 +41,9 @@ const EXERCISES = {
     { id: "overheadpress",  name: "Overhead Press",       unit: "kg", defaultReps: 12, defaultWeight: 20 },
   ],
   schouders: [
-    { id: "singlelateral", name: "Single Arm Lat Raise", unit: "kg", defaultReps: 12, defaultWeight: 8 },
+    { id: "singlelateral",  name: "Single Arm Lat Raise", unit: "kg", defaultReps: 12, defaultWeight: 8  },
+    { id: "shoulderpress",  name: "Shoulder Press",       unit: "kg", defaultReps: 10, defaultWeight: 30 },
+    { id: "reardelts",      name: "Rear Delts",           unit: "kg", defaultReps: 12, defaultWeight: 10 },
   ],
   core: [
     { id: "cablecr",  name: "Cable Crunch",          unit: "kg", defaultReps: 15, defaultWeight: 30 },
