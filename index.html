@@ -198,25 +198,57 @@
 
   <!-- ═══ SCREEN: HOME ═══════════════════════════════════════════ -->
   <div id="screen-home" class="screen active">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;padding-top:8px">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-bottom:18px">
       <div>
-        <h3>Welkom terug</h3>
-        <h1 id="home-name">Sam</h1>
+        <div style="font-size:.75rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Welkom terug</div>
+        <h1 id="home-name" style="font-size:2rem;line-height:1.1">Sam</h1>
       </div>
-      <div style="text-align:right">
-        <div style="font-size:.75rem;color:var(--muted)">Totaal level</div>
-        <div id="home-total-level" style="font-family:var(--font-display);font-size:2.2rem;line-height:1"></div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:8px 14px;text-align:center">
+        <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--accent);line-height:1" id="home-total-level">0</div>
+        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Level</div>
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-row" style="margin-bottom:8px">
-        <span style="font-size:.8rem;color:var(--muted)">Totale XP</span>
-        <span id="home-total-xp" style="font-family:var(--font-display);font-size:1.1rem;color:var(--accent)"></span>
+    <!-- Today split card -->
+    <div id="today-split-card" style="margin-bottom:16px"></div>
+
+    <!-- Stats row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center">
+        <div style="font-family:var(--font-display);font-size:1.6rem;color:var(--accent);line-height:1" id="home-week-workouts">0</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.05em">Deze week</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center">
+        <div style="font-family:var(--font-display);font-size:1.6rem;color:#ff6b35;line-height:1" id="home-streak">0</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.05em">Streak 🔥</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center">
+        <div style="font-family:var(--font-display);font-size:1.6rem;color:var(--text);line-height:1" id="home-total-workouts">0</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.05em">Totaal</div>
+      </div>
+    </div>
+
+    <!-- Activity bar chart (last 14 days) -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Activiteit</span>
+        <span style="font-size:.75rem;color:var(--muted)">14 dagen</span>
+      </div>
+      <div id="home-chart" style="display:flex;align-items:flex-end;gap:4px;height:52px"></div>
+    </div>
+
+    <!-- XP + tier -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Totale XP</div>
+        <div id="home-total-xp" style="font-family:var(--font-display);font-size:1.6rem;color:var(--accent);line-height:1"></div>
       </div>
       <div id="home-tier" style="font-size:.8rem;font-weight:600"></div>
     </div>
 
+    <!-- Muscle grid -->
     <h3 style="margin-bottom:10px">Spiergroepen</h3>
     <div class="muscle-grid" id="muscle-grid"></div>
 
@@ -363,14 +395,130 @@ function goTo(screen) {
 }
 
 // ── HOME ───────────────────────────────────────────────────────────────────
+// ── SPLIT ──────────────────────────────────────────────────────────────────
+// 0=zondag, 1=maandag, 2=dinsdag, 3=woensdag, 4=donderdag, 5=vrijdag, 6=zaterdag
+const SPLIT = {
+  1: ["borst", "triceps", "schouders"],
+  2: ["rug", "biceps"],
+  3: ["benen", "core"],
+  4: [], // rust
+  5: ["borst", "rug"],
+  6: ["biceps", "triceps", "schouders"],
+  0: ["benen", "core"],
+};
+
+const DAG_NAMEN = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
+
+function renderTodaySplit() {
+  const dag = new Date().getDay();
+  const spieren = SPLIT[dag] || [];
+  const card = document.getElementById('today-split-card');
+
+  if (spieren.length === 0) {
+    card.innerHTML = `
+      <div class="card" style="border-color:#2a2a33;background:var(--bg2)">
+        <h3 style="margin-bottom:6px">Vandaag &middot; ${DAG_NAMEN[dag]}</h3>
+        <div style="font-family:var(--font-display);font-size:1.6rem;color:var(--muted)">Rustdag</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:4px">Herstel is ook training!</div>
+      </div>`;
+    return;
+  }
+
+  const chips = spieren.map(id => {
+    const m = MUSCLES.find(x => x.id === id);
+    if (!m) return '';
+    const color = `hsl(${m.hue},70%,55%)`;
+    return `<span style="display:inline-flex;align-items:center;gap:5px;background:${color}18;border:1px solid ${color}44;border-radius:99px;padding:4px 12px;font-size:.82rem;font-weight:600;color:${color}">${m.name}</span>`;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="card" style="border-color:var(--accent)33;background:var(--bg2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h3>Vandaag &middot; ${DAG_NAMEN[dag]}</h3>
+        <span style="font-size:.7rem;color:var(--accent);font-weight:700">JOUW SPLIT</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${chips}</div>
+      <button class="btn btn-primary btn-full" style="padding:11px" onclick="startTodayWorkout()">Start training</button>
+    </div>`;
+}
+
+function startTodayWorkout() {
+  const dag = new Date().getDay();
+  const spieren = SPLIT[dag] || [];
+  if (spieren.length === 0) return;
+  goTo('log');
+  document.getElementById('log-muscle').value = spieren[0];
+  renderExerciseSelect();
+  currentSets = [];
+  addSet();
+  renderSets();
+}
+
+function calcStreak() {
+  if (!DB.workouts.length) return 0;
+  const days = new Set(DB.workouts.map(w => w.date.slice(0,10)));
+  let streak = 0;
+  const d = new Date();
+  // check today or yesterday as start
+  const todayStr = d.toISOString().slice(0,10);
+  d.setDate(d.getDate() - 1);
+  const yestStr = d.toISOString().slice(0,10);
+  let cur = days.has(todayStr) ? new Date() : (days.has(yestStr) ? new Date(Date.now() - 86400000) : null);
+  if (!cur) return 0;
+  while (true) {
+    const s = cur.toISOString().slice(0,10);
+    if (!days.has(s)) break;
+    streak++;
+    cur = new Date(cur.getTime() - 86400000);
+  }
+  return streak;
+}
+
+function renderHomeChart() {
+  const el = document.getElementById('home-chart');
+  if (!el) return;
+  const days = 14;
+  const counts = [];
+  for (let i = days-1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const s = d.toISOString().slice(0,10);
+    counts.push(DB.workouts.filter(w => w.date.slice(0,10) === s).length);
+  }
+  const max = Math.max(...counts, 1);
+  el.innerHTML = counts.map((c, i) => {
+    const h = Math.max(c / max * 100, c > 0 ? 15 : 4);
+    const isToday = i === days - 1;
+    const color = c > 0 ? (isToday ? 'var(--accent)' : '#4a7c10') : 'var(--bg3)';
+    const d = new Date(); d.setDate(d.getDate() - (days-1-i));
+    const label = d.toLocaleDateString('nl-NL',{weekday:'narrow'});
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+      <div style="width:100%;background:${color};border-radius:3px 3px 0 0;height:${h}%;min-height:${c>0?6:3}px;transition:height .4s"></div>
+      <div style="font-size:.55rem;color:${isToday?'var(--accent)':'var(--muted)'};font-weight:${isToday?700:400}">${label}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderHome() {
   document.getElementById('home-name').textContent = DB.user.name;
+  renderTodaySplit();
   const lv = totalLevel(DB.xp);
   document.getElementById('home-total-level').textContent = lv;
   document.getElementById('home-total-xp').textContent = totalXP(DB.xp).toLocaleString('nl') + ' XP';
   const tier = tierForLevel(Math.round(lv / MUSCLES.length));
   document.getElementById('home-tier').innerHTML =
     `<span class="tag" style="background:${tier.color}20;color:${tier.color}">${tier.name}</span>`;
+
+  // Stats row
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  const weekWorkouts = DB.workouts.filter(w => new Date(w.date) >= weekStart).length;
+  document.getElementById('home-week-workouts').textContent = weekWorkouts;
+  document.getElementById('home-streak').textContent = calcStreak();
+  document.getElementById('home-total-workouts').textContent = DB.workouts.length;
+
+  // Chart
+  renderHomeChart();
 
   // Muscle grid
   const grid = document.getElementById('muscle-grid');
