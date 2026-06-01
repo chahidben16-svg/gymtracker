@@ -336,16 +336,17 @@ async function supaFetch(path, options = {}) {
       'apikey': SUPA_KEY,
       'Authorization': 'Bearer ' + SUPA_KEY,
       'Content-Type': 'application/json',
-      'Prefer': options.prefer || '',
-      ...options.headers,
+      'Prefer': options.prefer || 'return=minimal',
+      ...(options.headers || {}),
     },
   });
-  if (!res.ok && res.status !== 204) {
+  if (!res.ok && res.status !== 204 && res.status !== 201) {
     const err = await res.text();
     throw new Error(err);
   }
-  if (res.status === 204) return null;
-  return res.json();
+  const text = await res.text();
+  if (!text || text.trim() === '') return null;
+  try { return JSON.parse(text); } catch(e) { return null; }
 }
 
 // ── STATE ──────────────────────────────────────────────────────────────────
