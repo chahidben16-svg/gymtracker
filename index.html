@@ -158,6 +158,7 @@
 
     <!-- FRIENDS TAB -->
     <div id="tab-content-friends" style="display:none">
+      <!-- My code -->
       <div class="card" style="margin-bottom:16px">
         <h3 style="margin-bottom:8px">Jouw vriendencode</h3>
         <div style="display:flex;align-items:center;gap:8px">
@@ -166,13 +167,23 @@
         </div>
         <div style="font-size:.75rem;color:var(--muted);margin-top:6px">Deel deze code met vrienden</div>
       </div>
+
+      <!-- Add friend -->
       <div class="card" style="margin-bottom:16px">
         <h3 style="margin-bottom:8px">Vriend toevoegen</h3>
         <div style="display:flex;gap:8px">
           <input type="text" id="friend-input" placeholder="Vriendencode" maxlength="6" />
-          <button class="btn btn-primary" style="white-space:nowrap;padding:10px 16px" onclick="addFriend()">+ Voeg toe</button>
+          <button class="btn btn-primary" style="white-space:nowrap;padding:10px 16px" onclick="addFriend()">Stuur verzoek</button>
         </div>
       </div>
+
+      <!-- Incoming requests -->
+      <div id="requests-section" style="display:none;margin-bottom:16px">
+        <h3 style="margin-bottom:10px">📬 Verzoeken</h3>
+        <div id="requests-list"></div>
+      </div>
+
+      <!-- Friends list -->
       <h3 style="margin-bottom:10px">Vrienden</h3>
       <div id="friends-list"><div class="empty">Nog geen vrienden.</div></div>
     </div>
@@ -734,16 +745,47 @@ async function renderFriends() {
   if (!CU) return;
   document.getElementById('my-friend-code').textContent = CU.friend_code;
   switchTab(currentTab);
-
-  // Load leaderboard
   renderLeaderboard();
+  await loadFriendsList();
+}
 
-  // Load friends list
+async function loadFriendsList() {
   const list = document.getElementById('friends-list');
   list.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted)"><div class="spinner"></div> Laden...</div>';
   try {
-    const links = await db('friends?user_id=eq.' + CU.id) || [];
-    if (!links.length) { list.innerHTML = '<div class="empty">Nog geen vrienden.<br>Deel jouw code om te beginnen!</div>'; return; }
+    // Incoming requests
+    const incoming = await db('friends?friend_id=eq.' + CU.id + '&status=eq.pending') || [];
+    const reqSection = document.getElementById('requests-section');
+    const reqList = document.getElementById('requests-list');
+    if (incoming.length > 0) {
+      reqSection.style.display = 'block';
+      reqList.innerHTML = '';
+      for (const req of incoming) {
+        const fu = await db('users?id=eq.' + req.user_id + '&limit=1');
+        if (!fu || !fu[0]) continue;
+        const f = fu[0];
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--accent)10;border:1px solid var(--accent)44;border-radius:var(--radius);padding:12px;margin-bottom:8px';
+        card.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-family:var(--font-d);font-size:1.2rem">${f.name}</div>
+          <div style="font-size:.72rem;color:var(--muted)">wil bevriend zijn</div></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-primary" style="padding:7px 12px;font-size:.8rem" onclick="acceptFriend('${f.id}', '${f.name}')">✓ Accepteer</button>
+            <button class="btn btn-danger" style="padding:7px 12px;font-size:.8rem" onclick="declineFriend('${f.id}', '${f.name}')">✕</button>
+          </div>
+        </div>`;
+        reqList.appendChild(card);
+      }
+    } else {
+      reqSection.style.display = 'none';
+    }
+
+    // Accepted friends
+    const links = await db('friends?user_id=eq.' + CU.id + '&status=eq.accepted') || [];
+    if (!links.length) {
+      list.innerHTML = '<div class="empty">Nog geen vrienden.<br>Stuur een verzoek via de vriendencode!</div>';
+      return;
+    }
     list.innerHTML = '';
     window._friendsCache = {};
     let fi = 0;
@@ -758,24 +800,87 @@ async function renderFriends() {
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)';
       card.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div><div style="font-family:var(--font-d);font-size:1.3rem">${f.name}</div><div style="font-size:.72rem;color:var(--muted)">Code: ${f.friend_code}</div></div>
-        <div style="text-align:right"><div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${lv}</div><div style="font-size:.65rem;color:var(--muted)">LEVEL</div></div>
+        <div><div style="font-family:var(--font-d);font-size:1.3rem">${f.name}</div>
+        <div style="font-size:.72rem;color:var(--muted)">Code: ${f.friend_code}</div></div>
+        <div style="text-align:right"><div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${lv}</div>
+        <div style="font-size:.65rem;color:var(--muted)">LEVEL</div></div>
       </div>
       <div style="display:flex;gap:6px">
-        <button class="btn btn-secondary" style="flex:1;padding:7px;font-size:.78rem" onclick="openFriendDetail(window._friendsCache[${idx}].f, window._friendsCache[${idx}].xmap)">📊 Stats</button>
+        <button class="btn btn-secondary" style="flex:1;padding:7px;font-size:.78rem" onclick="openFriendDetail(window._friendsCache[${idx}].f,window._friendsCache[${idx}].xmap)">📊 Stats</button>
         <button class="btn btn-secondary" style="flex:1;padding:7px;font-size:.78rem" onclick="openTrash(window._friendsCache[${idx}].f)">💬 Trash talk</button>
+        <button class="btn btn-danger" style="padding:7px 12px;font-size:.78rem" onclick="removeFriend('${f.id}','${f.name}')">🗑</button>
       </div>`;
       list.appendChild(card);
     }
   } catch(e) { list.innerHTML = '<div class="empty">Kon vrienden niet laden.</div>'; console.error(e); }
 }
 
+async function addFriend() {
+  const code = document.getElementById('friend-input').value.trim().toUpperCase();
+  if (code.length < 4) { alert('Voer een geldige code in!'); return; }
+  if (code === CU.friend_code) { alert('Dat is jouw eigen code!'); return; }
+  try {
+    const found = await db('users?friend_code=eq.' + code + '&limit=1');
+    if (!found || !found[0]) { alert('Geen gebruiker gevonden met deze code.'); return; }
+    const f = found[0];
+    const existing = await db('friends?user_id=eq.' + CU.id + '&friend_id=eq.' + f.id);
+    if (existing && existing.length) {
+      if (existing[0].status === 'accepted') { alert(f.name + ' is al jouw vriend!'); return; }
+      if (existing[0].status === 'pending') { alert('Verzoek al gestuurd naar ' + f.name + '!'); return; }
+    }
+    // Check if they already sent us a request → auto-accept
+    const theyReq = await db('friends?user_id=eq.' + f.id + '&friend_id=eq.' + CU.id + '&status=eq.pending');
+    if (theyReq && theyReq.length) {
+      await acceptFriend(f.id, f.name);
+      return;
+    }
+    await db('friends', 'POST', { user_id: CU.id, friend_id: f.id, status: 'pending' });
+    document.getElementById('friend-input').value = '';
+    alert('Verzoek gestuurd naar ' + f.name + '! 📬');
+    loadFriendsList();
+  } catch(e) { alert('Fout: ' + e.message); }
+}
+
+async function acceptFriend(fromId, name) {
+  try {
+    await db('friends?user_id=eq.' + fromId + '&friend_id=eq.' + CU.id, 'PATCH', { status: 'accepted' });
+    const existing = await db('friends?user_id=eq.' + CU.id + '&friend_id=eq.' + fromId);
+    if (!existing || !existing.length) {
+      await db('friends', 'POST', { user_id: CU.id, friend_id: fromId, status: 'accepted' });
+    } else {
+      await db('friends?user_id=eq.' + CU.id + '&friend_id=eq.' + fromId, 'PATCH', { status: 'accepted' });
+    }
+    alert('🎉 Je bent nu bevriend met ' + name + '!');
+    loadFriendsList();
+    renderLeaderboard();
+  } catch(e) { alert('Fout: ' + e.message); }
+}
+
+async function declineFriend(fromId, name) {
+  if (!confirm('Verzoek van ' + name + ' weigeren?')) return;
+  try {
+    await db('friends?user_id=eq.' + fromId + '&friend_id=eq.' + CU.id, 'DELETE');
+    loadFriendsList();
+  } catch(e) { alert('Fout: ' + e.message); }
+}
+
+async function removeFriend(friendId, name) {
+  if (!confirm('Wil je ' + name + ' verwijderen als vriend?')) return;
+  try {
+    await db('friends?user_id=eq.' + CU.id + '&friend_id=eq.' + friendId, 'DELETE');
+    await db('friends?user_id=eq.' + friendId + '&friend_id=eq.' + CU.id, 'DELETE');
+    loadFriendsList();
+    renderLeaderboard();
+  } catch(e) { alert('Fout: ' + e.message); }
+}
+
+
 async function renderLeaderboard() {
   const el = document.getElementById('leaderboard-list'); if (!el) return;
   el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted)"><div class="spinner"></div> Laden...</div>';
   try {
-    // Get friends
-    const links = await db('friends?user_id=eq.' + CU.id) || [];
+    // Get accepted friends only
+    const links = await db('friends?user_id=eq.' + CU.id + '&status=eq.accepted') || [];
     const friendIds = links.map(l => l.friend_id);
 
     // Build entries: self + friends
@@ -829,9 +934,12 @@ async function renderLeaderboard() {
               <span style="font-size:.72rem;color:var(--muted)">🔥 ${e.streak} streak</span>
             </div>
           </div>
-          <div style="text-align:right">
-            <div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${e.lv}</div>
-            <div style="font-size:.65rem;color:var(--muted)">LEVEL</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="text-align:right">
+              <div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${e.lv}</div>
+              <div style="font-size:.65rem;color:var(--muted)">LEVEL</div>
+            </div>
+            ${!e.isMe ? `<button onclick="removeFriend('${e.uid}','${e.name}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 8px;color:var(--muted);cursor:pointer;font-size:.8rem">🗑</button>` : ''}
           </div>
         </div>`;
       el.appendChild(card);
