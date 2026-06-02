@@ -208,6 +208,34 @@
     </div>
   </div>
 
+  <!-- TRASH TALK -->
+  <div id="screen-trash" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;padding-top:8px;margin-bottom:16px">
+      <button class="btn btn-secondary" style="padding:8px 14px" onclick="goTo('friends')">← Terug</button>
+      <h1 id="trash-name" style="font-size:1.8rem"></h1>
+    </div>
+
+    <!-- Messages -->
+    <div id="trash-messages" style="margin-bottom:16px;display:flex;flex-direction:column;gap:8px;min-height:200px"></div>
+
+    <!-- Input -->
+    <div style="position:sticky;bottom:80px;background:var(--bg);padding:8px 0">
+      <div style="display:flex;gap:8px">
+        <input type="text" id="trash-input" placeholder="Stuur een berichtje... 😏" maxlength="100" style="flex:1" />
+        <button class="btn btn-primary" style="padding:10px 16px;white-space:nowrap" onclick="sendTrash()">Stuur</button>
+      </div>
+      <!-- Quick trash talk buttons -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:.75rem" onclick="quickTrash('💀 Skip day?')">💀 Skip day?</button>
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:.75rem" onclick="quickTrash('😴 Ik train meer dan jij!')">😴 Ik train meer!</button>
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:.75rem" onclick="quickTrash('🐔 Chicken legs!')">🐔 Chicken legs!</button>
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:.75rem" onclick="quickTrash('💪 Kom op, meer gewicht!')">💪 Meer gewicht!</button>
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:.75rem" onclick="quickTrash('🏆 Ik sta hoger op het leaderboard 😎')">🏆 Leaderboard flex</button>
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:.75rem" onclick="quickTrash('🔥 GET TO THE GYM!')">🔥 Get to the gym!</button>
+      </div>
+    </div>
+  </div>
+
   <!-- FRIEND DETAIL -->
   <div id="screen-friend-detail" class="screen">
     <div style="display:flex;align-items:center;gap:12px;padding-top:8px;margin-bottom:20px">
@@ -720,6 +748,10 @@ async function renderFriends() {
         <div><div style="font-family:var(--font-d);font-size:1.3rem">${f.name}</div><div style="font-size:.72rem;color:var(--muted)">Code: ${f.friend_code}</div></div>
         <div style="text-align:right"><div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${lv}</div><div style="font-size:.65rem;color:var(--muted)">LEVEL</div></div>
       </div>`;
+      card.innerHTML += `<div style="display:flex;gap:6px;margin-top:10px">
+        <button class="btn btn-secondary" style="flex:1;padding:7px;font-size:.78rem" onclick="event.stopPropagation();openFriendDetail(JSON.parse(this.dataset.f), JSON.parse(this.dataset.x))" data-f='${JSON.stringify(f)}' data-x='${JSON.stringify(xmap)}'>📊 Stats</button>
+        <button class="btn btn-secondary" style="flex:1;padding:7px;font-size:.78rem" onclick="event.stopPropagation();openTrash(JSON.parse(this.dataset.f))" data-f='${JSON.stringify(f)}'>💬 Trash talk</button>
+      </div>`;
       card.onclick = () => openFriendDetail(f, xmap);
       list.appendChild(card);
     }
@@ -980,6 +1012,96 @@ function renderBadges() {
     if (unlocked) div.title = b.desc;
     el.appendChild(div);
   });
+}
+
+// ── TRASH TALK ─────────────────────────────────────────────────────────────
+let trashFriend = null;
+let trashInterval = null;
+
+async function openTrash(friend) {
+  trashFriend = friend;
+  document.getElementById('trash-name').textContent = '💬 ' + friend.name;
+
+  // Hide all screens, show trash
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('screen-trash');
+  el.classList.add('active'); el.style.display = 'block';
+  document.getElementById('nav-friends').classList.add('active');
+
+  await loadMessages();
+
+  // Auto-refresh every 10s
+  if (trashInterval) clearInterval(trashInterval);
+  trashInterval = setInterval(loadMessages, 10000);
+}
+
+async function loadMessages() {
+  if (!trashFriend || !CU) return;
+  const el = document.getElementById('trash-messages'); if (!el) return;
+
+  try {
+    // Get messages between me and this friend (both directions)
+    const msgs = await db(
+      'messages?or=(and(from_id.eq.' + CU.id + ',to_id.eq.' + trashFriend.id + '),and(from_id.eq.' + trashFriend.id + ',to_id.eq.' + CU.id + '))&order=created_at.asc&limit=50'
+    ) || [];
+
+    if (!msgs.length) {
+      el.innerHTML = '<div class="empty" style="padding:40px 0">Nog geen berichten.<br>Begin de trash talk! 😏</div>';
+      return;
+    }
+
+    el.innerHTML = '';
+    msgs.forEach(msg => {
+      const isMe = msg.from_id === CU.id;
+      const time = new Date(msg.created_at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+      const div = document.createElement('div');
+      div.style.cssText = `display:flex;flex-direction:column;align-items:${isMe ? 'flex-end' : 'flex-start'}`;
+      div.innerHTML = `
+        <div style="max-width:75%;background:${isMe ? 'var(--accent)' : 'var(--bg2)'};color:${isMe ? '#111' : 'var(--text)'};border:1px solid ${isMe ? 'transparent' : 'var(--border)'};border-radius:${isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px'};padding:10px 14px;font-size:.9rem;box-shadow:0 2px 6px rgba(0,0,0,.08)">
+          ${msg.text}
+        </div>
+        <div style="font-size:.62rem;color:var(--muted);margin-top:3px;padding:0 4px">${time}</div>`;
+      el.appendChild(div);
+    });
+
+    // Scroll to bottom
+    el.scrollTop = el.scrollHeight;
+  } catch(e) { console.error(e); }
+}
+
+async function sendTrash() {
+  const input = document.getElementById('trash-input');
+  const text = input.value.trim();
+  if (!text || !trashFriend) return;
+
+  const msg = { id: 'm' + Date.now(), from_id: CU.id, to_id: trashFriend.id, text };
+  try {
+    await db('messages', 'POST', msg);
+    input.value = '';
+    await loadMessages();
+  } catch(e) { alert('Fout: ' + e.message); }
+}
+
+function quickTrash(text) {
+  document.getElementById('trash-input').value = text;
+  sendTrash();
+}
+
+// Send on Enter key
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('trash-input');
+  if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') sendTrash(); });
+});
+
+// Stop interval when leaving trash screen
+const _origGoTo = goTo;
+function goTo(screen) {
+  if (screen !== 'trash' && trashInterval) {
+    clearInterval(trashInterval);
+    trashInterval = null;
+  }
+  _origGoTo(screen);
 }
 
 // ── STATS ──────────────────────────────────────────────────────────────────
