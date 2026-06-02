@@ -82,15 +82,23 @@
   <!-- HOME -->
   <div id="screen-home" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-bottom:18px">
-      <div>
-        <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Welkom terug</div>
-        <h1 id="home-name" style="font-size:2rem;line-height:1.1">-</h1>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="home-avatar" onclick="changeAvatar()" style="width:48px;height:48px;border-radius:50%;background:var(--bg3);border:2px solid var(--accent);overflow:hidden;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem">
+          <img id="home-avatar-img" src="" style="width:100%;height:100%;object-fit:cover;display:none" />
+          <span id="home-avatar-initials">?</span>
+        </div>
+        <div>
+          <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Welkom terug</div>
+          <h1 id="home-name" style="font-size:2rem;line-height:1.1">-</h1>
+        </div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:8px 14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
         <div style="font-family:var(--font-d);font-size:1.8rem;color:var(--accent);line-height:1" id="home-total-level">0</div>
         <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">Level</div>
       </div>
     </div>
+    <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)" />
+    <input type="file" id="workout-photo-input" accept="image/*" style="display:none" onchange="uploadWorkoutPhoto(this)" />
     <div id="today-split-card" style="margin-bottom:16px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
@@ -131,7 +139,17 @@
     <!-- Add exercise button -->
     <button class="btn btn-secondary btn-full" style="margin-bottom:16px" onclick="addExerciseBlock()">+ Oefening toevoegen</button>
 
-    <button class="btn btn-primary btn-full" style="font-size:1rem;padding:15px" onclick="saveWorkout()">💪 Workout Opslaan</button>
+    <!-- Workout photo -->
+    <div id="workout-photo-preview" style="display:none;margin-bottom:12px">
+      <div style="position:relative;display:inline-block;width:100%">
+        <img id="workout-photo-img" src="" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;border:1px solid var(--border)" />
+        <button onclick="removeWorkoutPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);border:none;color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.8rem">✕</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-secondary" style="flex:1;padding:12px" onclick="document.getElementById('workout-photo-input').click()">📷 Foto toevoegen</button>
+      <button class="btn btn-primary" style="flex:2;padding:12px;font-size:1rem" onclick="saveWorkout()">💪 Workout Opslaan</button>
+    </div>
   </div>
 
   <!-- HISTORY -->
@@ -396,6 +414,7 @@ function goTo(screen) {
 function renderHome() {
   if (!CU) return;
   document.getElementById('home-name').textContent = CU.name;
+  renderAvatar(CU.avatar_url || null, CU.name);
   const lv = totalLevel(DB_local.xp);
   document.getElementById('home-total-level').textContent = lv;
   const now = new Date();
@@ -628,7 +647,7 @@ async function saveWorkout() {
 
   // Use first muscle as primary for workout label, or 'mix' 
   const primaryMuscle = muscleIds.length === 1 ? muscleIds[0] : muscleIds[0];
-  const workout = { id: 'w' + Date.now(), user_id: CU.id, date: new Date().toISOString(), muscle: primaryMuscle, muscles: muscleIds, sets: allSets };
+  const workout = { id: 'w' + Date.now(), user_id: CU.id, date: new Date().toISOString(), muscle: primaryMuscle, muscles: muscleIds, sets: allSets, photo_url: pendingWorkoutPhotoUrl || null };
 
   try {
     await db('workouts', 'POST', workout);
@@ -650,6 +669,8 @@ async function saveWorkout() {
     }
     showToast('+' + xpGained + ' XP');
     exerciseBlocks = [];
+    pendingWorkoutPhotoUrl = null;
+    document.getElementById('workout-photo-preview').style.display = 'none';
     setTimeout(() => goTo('home'), 400);
   } catch(e) { alert('Fout: ' + e.message); }
 }
@@ -677,7 +698,8 @@ function makeWorkoutCard(w) {
     <span style="font-size:.75rem;color:var(--accent)">+${xpW} XP</span>
     <span style="font-size:.75rem;color:var(--muted);margin-left:auto">${formatDate(w.date)}</span>
   </div>
-  <div style="font-size:.82rem;color:var(--muted)">${summary || '—'}</div>`;
+  <div style="font-size:.82rem;color:var(--muted);margin-bottom:${w.photo_url?'8px':'0'}">${summary || '—'}</div>
+  ${w.photo_url ? `<img src="${w.photo_url}" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;border:1px solid var(--border)" />` : ''}`;
   card.onclick = () => openModal(w.id);
   return card;
 }
@@ -689,7 +711,8 @@ function openModal(id) {
   const m = MUSCLES.find(x=>x.id===w.muscle) || {name:w.muscle,hue:200};
   const col = `hsl(${m.hue},60%,45%)`;
   let html = `<h2 style="color:${col};margin-bottom:4px">${m.name}</h2>
-    <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">${new Date(w.date).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})}</div>`;
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:${w.photo_url?'12px':'16px'}">${new Date(w.date).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})}</div>
+    ${w.photo_url ? `<img src="${w.photo_url}" style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;border:1px solid var(--border);margin-bottom:16px" />` : ''}`;
   w.sets.forEach((s,i) => {
     const ex = exerciseById(w.muscle, s.exercise); const n = ex ? ex.name : s.exercise;
     const val = s.unit==='bw' ? `${s.reps} reps` : s.unit==='sec' ? `${s.reps} sec` : `${s.reps} × ${s.weight} ${s.unit}`;
@@ -909,7 +932,8 @@ async function renderLeaderboard() {
         if (!days.has(ts)) cur = new Date(Date.now()-86400000);
         while (days.has(cur.toISOString().slice(0,10))) { streak++; cur = new Date(cur.getTime()-86400000); }
       }
-      entries.push({ uid, name, lv, xp, weekW, streak, isMe: uid === CU.id });
+      const avatarUrl = uid === CU.id ? (CU.avatar_url || null) : (fu && fu[0] ? fu[0].avatar_url : null);
+      entries.push({ uid, name, lv, xp, weekW, streak, isMe: uid === CU.id, avatar: avatarUrl });
     }
 
     // Sort by total XP
@@ -926,6 +950,7 @@ async function renderLeaderboard() {
           <div style="font-size:1.6rem;min-width:36px;text-align:center">${isTop ? medals[i] : '#'+(i+1)}</div>
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:6px">
+              ${e.avatar ? `<img src="${e.avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />` : `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:var(--muted)">${e.name[0].toUpperCase()}</div>`}
               <span style="font-family:var(--font-d);font-size:1.2rem">${e.name}</span>
               ${e.isMe ? '<span style="font-size:.65rem;background:var(--accent);color:#111;padding:1px 7px;border-radius:99px;font-weight:700">JIJ</span>' : ''}
             </div>
@@ -993,6 +1018,76 @@ function openFriendDetail(f, xmap) {
     </div><div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div></div>`;
   });
   document.getElementById('fd-content').innerHTML = html;
+}
+
+// ── PHOTOS ─────────────────────────────────────────────────────────────────
+let pendingWorkoutPhotoUrl = null;
+
+async function uploadToStorage(bucket, path, file) {
+  const res = await fetch(SUPA_URL + '/storage/v1/object/' + bucket + '/' + path, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  if (!res.ok) throw new Error('Upload mislukt: ' + await res.text());
+  return SUPA_URL + '/storage/v1/object/public/' + bucket + '/' + path;
+}
+
+function changeAvatar() {
+  document.getElementById('avatar-input').click();
+}
+
+async function uploadAvatar(input) {
+  const file = input.files[0]; if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Foto mag max 5MB zijn!'); return; }
+  try {
+    const path = 'avatars/' + CU.id + '.' + file.name.split('.').pop();
+    const url = await uploadToStorage('Fotos', path, file);
+    await db('users?id=eq.' + CU.id, 'PATCH', { avatar_url: url });
+    CU.avatar_url = url;
+    localStorage.setItem('gu', JSON.stringify(CU));
+    renderAvatar(url, CU.name);
+    showToast('Profielfoto opgeslagen! 📷');
+  } catch(e) { alert('Fout: ' + e.message); }
+  input.value = '';
+}
+
+function renderAvatar(url, name) {
+  const img = document.getElementById('home-avatar-img');
+  const initials = document.getElementById('home-avatar-initials');
+  if (url) {
+    img.src = url; img.style.display = 'block';
+    initials.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    initials.style.display = 'block';
+    initials.textContent = name ? name[0].toUpperCase() : '?';
+  }
+}
+
+function removeWorkoutPhoto() {
+  pendingWorkoutPhotoUrl = null;
+  document.getElementById('workout-photo-preview').style.display = 'none';
+  document.getElementById('workout-photo-img').src = '';
+  document.getElementById('workout-photo-input').value = '';
+}
+
+async function uploadWorkoutPhoto(input) {
+  const file = input.files[0]; if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { alert('Foto mag max 10MB zijn!'); return; }
+  try {
+    const path = 'workouts/' + CU.id + '_' + Date.now() + '.' + file.name.split('.').pop();
+    const url = await uploadToStorage('Fotos', path, file);
+    pendingWorkoutPhotoUrl = url;
+    document.getElementById('workout-photo-img').src = url;
+    document.getElementById('workout-photo-preview').style.display = 'block';
+    showToast('Foto klaar! 📷');
+  } catch(e) { alert('Fout: ' + e.message); }
 }
 
 // ── PERSONAL RECORDS ───────────────────────────────────────────────────────
