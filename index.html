@@ -125,8 +125,6 @@
     <h1 style="margin-bottom:4px;padding-top:8px">Log Workout</h1>
     <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">Voeg alle oefeningen toe en sla dan op</div>
 
-    <div class="card"><h3 style="margin-bottom:8px">Spiergroep</h3><select id="log-muscle" onchange="onMuscleChange()"></select></div>
-
     <!-- Exercise blocks -->
     <div id="exercise-blocks"></div>
 
@@ -349,7 +347,7 @@ function renderHome() {
       <div style="font-size:.75rem;color:${col};font-weight:600">LV ${p.level} <span style="color:var(--muted)">· ${xp.toLocaleString('nl')} XP</span></div>
       <div style="height:8px"></div>
       <div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div>`;
-    c.onclick = () => { goTo('log'); setTimeout(() => { document.getElementById('log-muscle').value = m.id; exerciseBlocks = []; onMuscleChange(); }, 50); };
+    c.onclick = () => { exerciseBlocks = []; addExerciseBlock(m.id); goTo('log'); };
     grid.appendChild(c);
   });
 
@@ -418,62 +416,64 @@ function renderTodaySplit() {
 function startToday() {
   const sp = SPLIT[new Date().getDay()] || [];
   if (!sp.length) return;
+  exerciseBlocks = [];
+  sp.forEach(mid => addExerciseBlock(mid));
   goTo('log');
-  setTimeout(() => { document.getElementById('log-muscle').value = sp[0]; exerciseBlocks = []; onMuscleChange(); }, 50);
 }
 
 // ── LOG ────────────────────────────────────────────────────────────────────
-// exerciseBlocks: [{exId, sets:[{reps,weight,unit}]}]
+// exerciseBlocks: [{muscleId, exId, sets:[{reps,weight,unit}]}]
 let exerciseBlocks = [];
 
 function renderLog() {
-  const sel = document.getElementById('log-muscle');
-  if (!sel.options.length) sel.innerHTML = MUSCLES.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
   if (!exerciseBlocks.length) addExerciseBlock();
   else renderAllBlocks();
 }
 
-function onMuscleChange() {
-  exerciseBlocks = [];
-  addExerciseBlock();
-}
+function onMuscleChange() {}
+function onExerciseChange() {}
+function addSet() {}
+function renderSets() {}
+function updateSet() {}
+function removeSet() {}
 
-function addExerciseBlock() {
-  const mid = document.getElementById('log-muscle')?.value || MUSCLES[0].id;
+function addExerciseBlock(prefillMuscle) {
+  const mid = prefillMuscle || MUSCLES[0].id;
   const exList = EXERCISES[mid] || [];
-  // Pick first exercise not already added, or first
-  const usedIds = exerciseBlocks.map(b => b.exId);
-  const ex = exList.find(e => !usedIds.includes(e.id)) || exList[0];
+  const ex = exList[0];
   if (!ex) return;
-  exerciseBlocks.push({ exId: ex.id, sets: [{ reps: ex.defaultReps, weight: ex.defaultWeight, unit: ex.unit }] });
+  exerciseBlocks.push({ muscleId: mid, exId: ex.id, sets: [{ reps: ex.defaultReps, weight: ex.defaultWeight, unit: ex.unit }] });
   renderAllBlocks();
 }
 
 function renderAllBlocks() {
   const container = document.getElementById('exercise-blocks');
   if (!container) return;
-  const mid = document.getElementById('log-muscle')?.value || MUSCLES[0].id;
-  const exList = EXERCISES[mid] || [];
   container.innerHTML = '';
   exerciseBlocks.forEach((block, bi) => {
-    const ex = exList.find(e => e.id === block.exId) || exList[0];
+    const exList = EXERCISES[block.muscleId] || [];
     const totalXpBlock = block.sets.reduce((t,s) => t + setXP(s, s.unit), 0);
+    const m = MUSCLES.find(x => x.id === block.muscleId);
+    const col = m ? `hsl(${m.hue},60%,45%)` : 'var(--accent)';
+
     const div = document.createElement('div');
     div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)';
-    // Header
-    const header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
-    header.innerHTML = `
-      <div style="flex:1;margin-right:8px">
-        <select style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:8px;outline:none;-webkit-appearance:none" onchange="changeExercise(${bi},this.value)">
-          ${exList.map(e => `<option value="${e.id}" ${e.id===block.exId?'selected':''}>${e.name}</option>`).join('')}
-        </select>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:.75rem;color:var(--accent);font-weight:700">+${totalXpBlock}xp</span>
-        ${exerciseBlocks.length > 1 ? `<button onclick="removeBlock(${bi})" style="background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:2px">✕</button>` : ''}
+
+    // Muscle + exercise selectors
+    const selRow = document.createElement('div');
+    selRow.style.cssText = 'display:flex;gap:6px;margin-bottom:10px;align-items:center';
+    selRow.innerHTML = `
+      <select style="flex:1;background:var(--bg3);border:1px solid ${col};border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.82rem;padding:8px;outline:none;-webkit-appearance:none;font-weight:600;color:${col}" onchange="changeBlockMuscle(${bi},this.value)">
+        ${MUSCLES.map(mu => `<option value="${mu.id}" ${mu.id===block.muscleId?'selected':''}>${mu.name}</option>`).join('')}
+      </select>
+      <select style="flex:2;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.82rem;padding:8px;outline:none;-webkit-appearance:none" onchange="changeExercise(${bi},this.value)">
+        ${exList.map(e => `<option value="${e.id}" ${e.id===block.exId?'selected':''}>${e.name}</option>`).join('')}
+      </select>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:.72rem;color:var(--accent);font-weight:700;white-space:nowrap">+${totalXpBlock}xp</span>
+        ${exerciseBlocks.length > 1 ? `<button onclick="removeBlock(${bi})" style="background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:2px 4px">✕</button>` : ''}
       </div>`;
-    div.appendChild(header);
+    div.appendChild(selRow);
 
     // Sets
     const setsDiv = document.createElement('div');
@@ -492,7 +492,6 @@ function renderAllBlocks() {
     });
     div.appendChild(setsDiv);
 
-    // Add set button
     const addBtn = document.createElement('button');
     addBtn.className = 'btn btn-secondary';
     addBtn.style.cssText = 'padding:6px 14px;font-size:.8rem;margin-top:6px;width:100%';
@@ -503,8 +502,17 @@ function renderAllBlocks() {
   });
 }
 
+function changeBlockMuscle(bi, mid) {
+  const exList = EXERCISES[mid] || [];
+  const ex = exList[0];
+  exerciseBlocks[bi].muscleId = mid;
+  exerciseBlocks[bi].exId = ex ? ex.id : '';
+  exerciseBlocks[bi].sets = [{ reps: ex ? ex.defaultReps : 10, weight: ex ? ex.defaultWeight : 0, unit: ex ? ex.unit : 'kg' }];
+  renderAllBlocks();
+}
+
 function changeExercise(bi, exId) {
-  const mid = document.getElementById('log-muscle')?.value || MUSCLES[0].id;
+  const mid = exerciseBlocks[bi].muscleId;
   const ex = exerciseById(mid, exId);
   exerciseBlocks[bi].exId = exId;
   exerciseBlocks[bi].sets = [{ reps: ex ? ex.defaultReps : 10, weight: ex ? ex.defaultWeight : 0, unit: ex ? ex.unit : 'kg' }];
@@ -533,29 +541,34 @@ function removeBlock(bi) {
   renderAllBlocks();
 }
 
-// Keep these for backward compat
-function onExerciseChange() {}
-function addSet() {}
-function renderSets() {}
-function updateSet() {}
-function removeSet() {}
-
 async function saveWorkout() {
   if (!exerciseBlocks.length) { alert('Voeg eerst een oefening toe.'); return; }
-  const mid = document.getElementById('log-muscle').value;
-  const allSets = [];
+
+  // Group sets per muscle
+  const byMuscle = {};
   exerciseBlocks.forEach(block => {
-    block.sets.forEach(s => allSets.push({ exercise: block.exId, reps: s.reps, weight: s.weight, unit: s.unit }));
+    if (!byMuscle[block.muscleId]) byMuscle[block.muscleId] = [];
+    block.sets.forEach(s => byMuscle[block.muscleId].push({ exercise: block.exId, reps: s.reps, weight: s.weight, unit: s.unit }));
   });
-  if (!allSets.length) { alert('Voeg eerst sets toe.'); return; }
+
+  const muscleIds = Object.keys(byMuscle);
+  const allSets = exerciseBlocks.flatMap(block => block.sets.map(s => ({ exercise: block.exId, muscle: block.muscleId, reps: s.reps, weight: s.weight, unit: s.unit })));
   const xpGained = allSets.reduce((t, s) => t + setXP(s, s.unit), 0);
-  const workout = { id: 'w' + Date.now(), user_id: CU.id, date: new Date().toISOString(), muscle: mid, sets: allSets };
+
+  // Use first muscle as primary for workout label, or 'mix' 
+  const primaryMuscle = muscleIds.length === 1 ? muscleIds[0] : muscleIds[0];
+  const workout = { id: 'w' + Date.now(), user_id: CU.id, date: new Date().toISOString(), muscle: primaryMuscle, muscles: muscleIds, sets: allSets };
+
   try {
     await db('workouts', 'POST', workout);
-    const newXP = (DB_local.xp[mid] || 0) + xpGained;
-    await db('xp?user_id=eq.' + CU.id + '&muscle=eq.' + mid, 'PATCH', { amount: newXP });
+    // Update XP for each muscle
+    for (const mid of muscleIds) {
+      const muscleXP = byMuscle[mid].reduce((t,s) => t + setXP(s, s.unit), 0);
+      const newXP = (DB_local.xp[mid] || 0) + muscleXP;
+      await db('xp?user_id=eq.' + CU.id + '&muscle=eq.' + mid, 'PATCH', { amount: newXP });
+      DB_local.xp[mid] = newXP;
+    }
     DB_local.workouts.unshift(workout);
-    DB_local.xp[mid] = newXP;
     showToast('+' + xpGained + ' XP');
     exerciseBlocks = [];
     setTimeout(() => goTo('home'), 400);
