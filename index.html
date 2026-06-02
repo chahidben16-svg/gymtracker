@@ -358,7 +358,10 @@ function startApp() {
 }
 
 // ── NAV ────────────────────────────────────────────────────────────────────
+let _goToRunning = false;
 function goTo(screen) {
+  if (_goToRunning) return;
+  _goToRunning = true;
   // Stop trash talk interval when leaving
   if (screen !== 'trash' && typeof trashInterval !== 'undefined' && trashInterval) {
     clearInterval(trashInterval);
@@ -375,6 +378,7 @@ function goTo(screen) {
   if (screen === 'history') renderHistory();
   if (screen === 'friends') renderFriends();
   if (screen === 'stats') renderStats();
+  _goToRunning = false;
 }
 
 // ── HOME ───────────────────────────────────────────────────────────────────
@@ -741,23 +745,26 @@ async function renderFriends() {
     const links = await db('friends?user_id=eq.' + CU.id) || [];
     if (!links.length) { list.innerHTML = '<div class="empty">Nog geen vrienden.<br>Deel jouw code om te beginnen!</div>'; return; }
     list.innerHTML = '';
+    window._friendsCache = {};
+    let fi = 0;
     for (const link of links) {
       const fu = await db('users?id=eq.' + link.friend_id + '&limit=1');
       if (!fu || !fu[0]) continue;
       const f = fu[0];
       const { xmap } = await getUserData(f.id);
       const lv = totalLevel(xmap);
+      const idx = fi++;
+      window._friendsCache[idx] = { f, xmap };
       const card = document.createElement('div');
-      card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer';
-      card.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between">
+      card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)';
+      card.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div><div style="font-family:var(--font-d);font-size:1.3rem">${f.name}</div><div style="font-size:.72rem;color:var(--muted)">Code: ${f.friend_code}</div></div>
         <div style="text-align:right"><div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${lv}</div><div style="font-size:.65rem;color:var(--muted)">LEVEL</div></div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-secondary" style="flex:1;padding:7px;font-size:.78rem" onclick="openFriendDetail(window._friendsCache[${idx}].f, window._friendsCache[${idx}].xmap)">📊 Stats</button>
+        <button class="btn btn-secondary" style="flex:1;padding:7px;font-size:.78rem" onclick="openTrash(window._friendsCache[${idx}].f)">💬 Trash talk</button>
       </div>`;
-      card.innerHTML += `<div style="display:flex;gap:6px;margin-top:10px">
-        <button class="btn btn-secondary" style="flex:1;padding:7px;font-size:.78rem" onclick="event.stopPropagation();openFriendDetail(JSON.parse(this.dataset.f), JSON.parse(this.dataset.x))" data-f='${JSON.stringify(f)}' data-x='${JSON.stringify(xmap)}'>📊 Stats</button>
-        <button class="btn btn-secondary" style="flex:1;padding:7px;font-size:.78rem" onclick="event.stopPropagation();openTrash(JSON.parse(this.dataset.f))" data-f='${JSON.stringify(f)}'>💬 Trash talk</button>
-      </div>`;
-      card.onclick = () => openFriendDetail(f, xmap);
       list.appendChild(card);
     }
   } catch(e) { list.innerHTML = '<div class="empty">Kon vrienden niet laden.</div>'; console.error(e); }
