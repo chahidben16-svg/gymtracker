@@ -1,938 +1,173 @@
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#f5f5f0" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Gymmings" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
-  <title>Gymmings</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #f5f5f0; --bg2: #ffffff; --bg3: #eeede8;
-      --border: #e0ddd5; --text: #111110; --muted: #888880;
-      --accent: #c9a84c; --radius: 14px;
-      --font-d: 'Bebas Neue', sans-serif;
-      --font-b: 'DM Sans', sans-serif;
-    }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-b); font-size: 15px; overflow: hidden; }
-    #app { display: flex; flex-direction: column; height: 100dvh; }
-    .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px 90px; }
-    .screen.active { display: block; }
-    nav { display: flex; justify-content: space-around; align-items: center; background: var(--bg2); border-top: 1px solid var(--border); box-shadow: 0 -2px 12px rgba(0,0,0,.08); padding: 8px 0 max(8px, env(safe-area-inset-bottom)); position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; }
-    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; color: var(--muted); font-family: var(--font-b); font-size: 10px; font-weight: 500; padding: 4px 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .nav-btn svg { width: 22px; height: 22px; }
-    .nav-btn.active { color: var(--accent); }
-    h1 { font-family: var(--font-d); font-size: 2.4rem; letter-spacing: .02em; line-height: 1; }
-    h3 { font-size: .85rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-    .xp-bar-wrap { background: var(--bg3); border-radius: 99px; height: 6px; overflow: hidden; }
-    .xp-bar-fill { height: 100%; border-radius: 99px; }
-    .muscle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .muscle-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.06); -webkit-tap-highlight-color: transparent; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 10px; padding: 12px 20px; font-family: var(--font-b); font-size: .9rem; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .btn-primary { background: var(--accent); color: #111110; }
-    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
-    .btn-danger { background: #ff4444; color: #fff; }
-    .btn-full { width: 100%; }
-    .set-row { display: flex; align-items: center; gap: 8px; background: var(--bg3); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
-    .set-num { font-family: var(--font-d); font-size: 1.1rem; color: var(--muted); min-width: 24px; }
-    .set-input { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-b); font-size: .95rem; padding: 8px; text-align: center; outline: none; -webkit-appearance: none; }
-    .set-input:focus { border-color: var(--accent); }
-    .set-label { font-size: .7rem; color: var(--muted); text-align: center; margin-top: 2px; }
-    .set-delete { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 4px; }
-    select, input[type=text] { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: var(--font-b); font-size: .95rem; padding: 12px; outline: none; -webkit-appearance: none; }
-    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b80' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
-    input[type=text]:focus { border-color: var(--accent); }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .2s; }
-    .modal-overlay.open { opacity: 1; pointer-events: all; }
-    .modal { background: var(--bg2); border-radius: 20px 20px 0 0; border: 1px solid var(--border); width: 100%; max-height: 90dvh; overflow-y: auto; padding: 20px 16px max(20px, env(safe-area-inset-bottom)); transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1); }
-    .modal-overlay.open .modal { transform: translateY(0); }
-    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 99px; margin: 0 auto 16px; }
-    .xp-toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--accent); color: #111110; font-family: var(--font-d); font-size: 1.3rem; padding: 8px 20px; border-radius: 99px; opacity: 0; pointer-events: none; transition: all .3s; z-index: 300; }
-    .xp-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .tag { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-    .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: .9rem; }
-    .divider { height: 1px; background: var(--border); margin: 14px 0; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
-  </style>
-</head>
-<body>
-<div id="app">
-
-  <!-- LOGIN -->
-  <div id="screen-login" class="screen active" style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100dvh;padding:32px 24px;text-align:center">
-    <div style="font-family:var(--font-d);font-size:3.5rem;color:var(--accent);letter-spacing:.04em;margin-bottom:4px">GYMMINGS</div>
-    <div style="color:var(--muted);font-size:.9rem;margin-bottom:40px">Track je workouts. Level op. Compete met vrienden.</div>
-    <div style="width:100%;max-width:340px">
-      <h3 style="margin-bottom:8px;text-align:left">Jouw naam</h3>
-      <input type="text" id="login-name" placeholder="Bijv. Chahid" maxlength="20" style="margin-bottom:12px" />
-      <button class="btn btn-primary btn-full" style="padding:14px;font-size:1rem" id="login-btn" onclick="doLogin()">Start 💪</button>
-      <div style="margin-top:16px;font-size:.8rem;color:var(--muted)">Al een account? Voer dezelfde naam in als de vorige keer.</div>
-    </div>
-  </div>
-
-  <!-- HOME -->
-  <div id="screen-home" class="screen">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-bottom:18px">
-      <div>
-        <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Welkom terug</div>
-        <h1 id="home-name" style="font-size:2rem;line-height:1.1">-</h1>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:8px 14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-        <div style="font-family:var(--font-d);font-size:1.8rem;color:var(--accent);line-height:1" id="home-total-level">0</div>
-        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">Level</div>
-      </div>
-    </div>
-    <div id="today-split-card" style="margin-bottom:16px"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-        <div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)" id="home-week">0</div>
-        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">Week</div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-        <div style="font-family:var(--font-d);font-size:1.6rem;color:#ff6b35" id="home-streak">0</div>
-        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">Streak 🔥</div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-        <div style="font-family:var(--font-d);font-size:1.6rem;color:var(--text)" id="home-total-w">0</div>
-        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">Totaal</div>
-      </div>
-    </div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-        <span style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Activiteit</span>
-        <span style="font-size:.75rem;color:var(--muted)">14 dagen</span>
-      </div>
-      <div id="home-chart" style="display:flex;align-items:flex-end;gap:4px;height:52px"></div>
-    </div>
-    <h3 style="margin-bottom:10px">Spiergroepen</h3>
-    <div class="muscle-grid" id="muscle-grid"></div>
-    <div style="height:12px"></div>
-    <h3 style="margin-bottom:10px">Recente workouts</h3>
-    <div id="recent-list"></div>
-  </div>
-
-  <!-- LOG -->
-  <div id="screen-log" class="screen">
-    <h1 style="margin-bottom:4px;padding-top:8px">Log Workout</h1>
-    <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">Voeg alle oefeningen toe en sla dan op</div>
-
-    <!-- Exercise blocks -->
-    <div id="exercise-blocks"></div>
-
-    <!-- Add exercise button -->
-    <button class="btn btn-secondary btn-full" style="margin-bottom:16px" onclick="addExerciseBlock()">+ Oefening toevoegen</button>
-
-    <button class="btn btn-primary btn-full" style="font-size:1rem;padding:15px" onclick="saveWorkout()">💪 Workout Opslaan</button>
-  </div>
-
-  <!-- HISTORY -->
-  <div id="screen-history" class="screen">
-    <h1 style="margin-bottom:16px;padding-top:8px">Historie</h1>
-    <div id="history-list"></div>
-  </div>
-
-  <!-- FRIENDS -->
-  <div id="screen-friends" class="screen">
-    <h1 style="margin-bottom:12px;padding-top:8px">Sociaal</h1>
-
-    <!-- Tabs -->
-    <div style="display:flex;gap:6px;margin-bottom:16px;background:var(--bg3);border-radius:10px;padding:4px">
-      <button id="tab-leaderboard" class="btn" style="flex:1;padding:8px;font-size:.85rem;border-radius:8px;background:var(--bg2);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)" onclick="switchTab('leaderboard')">🏆 Leaderboard</button>
-      <button id="tab-friends" class="btn" style="flex:1;padding:8px;font-size:.85rem;border-radius:8px;background:none;color:var(--muted)" onclick="switchTab('friends')">👥 Vrienden</button>
-    </div>
-
-    <!-- LEADERBOARD TAB -->
-    <div id="tab-content-leaderboard">
-      <div style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Jij + vrienden gerangschikt op totaal level</div>
-      <div id="leaderboard-list"><div style="display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted)"><div class="spinner"></div> Laden...</div></div>
-    </div>
-
-    <!-- FRIENDS TAB -->
-    <div id="tab-content-friends" style="display:none">
-      <div class="card" style="margin-bottom:16px">
-        <h3 style="margin-bottom:8px">Jouw vriendencode</h3>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div id="my-friend-code" style="font-family:var(--font-d);font-size:2rem;color:var(--accent);letter-spacing:.1em">----</div>
-          <button class="btn btn-secondary" style="padding:8px 14px;font-size:.8rem" onclick="copyCode()">Kopieer</button>
-        </div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:6px">Deel deze code met vrienden</div>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <h3 style="margin-bottom:8px">Vriend toevoegen</h3>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="friend-input" placeholder="Vriendencode" maxlength="6" />
-          <button class="btn btn-primary" style="white-space:nowrap;padding:10px 16px" onclick="addFriend()">+ Voeg toe</button>
-        </div>
-      </div>
-      <h3 style="margin-bottom:10px">Vrienden</h3>
-      <div id="friends-list"><div class="empty">Nog geen vrienden.</div></div>
-    </div>
-  </div>
-
-  <!-- STATS -->
-  <div id="screen-stats" class="screen">
-    <h1 style="margin-bottom:16px;padding-top:8px">Stats</h1>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <div class="card"><div style="font-family:var(--font-d);font-size:2rem" id="s-workouts">0</div><div style="font-size:.75rem;color:var(--muted)">Workouts</div></div>
-      <div class="card"><div style="font-family:var(--font-d);font-size:2rem" id="s-sets">0</div><div style="font-size:.75rem;color:var(--muted)">Sets</div></div>
-      <div class="card"><div style="font-family:var(--font-d);font-size:2rem;color:var(--accent)" id="s-xp">0</div><div style="font-size:.75rem;color:var(--muted)">Totale XP</div></div>
-      <div class="card"><div style="font-family:var(--font-d);font-size:2rem" id="s-level">0</div><div style="font-size:.75rem;color:var(--muted)">Totaal Level</div></div>
-    </div>
-    <h3 style="margin-bottom:10px">Per spiergroep</h3>
-    <div id="stats-muscles"></div>
-    <div class="divider"></div>
-    <h3 style="margin-bottom:10px">Badges</h3>
-    <div id="badges-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px"></div>
-
-    <div class="divider"></div>
-    <h3 style="margin-bottom:10px">Instellingen</h3>
-    <div class="card">
-      <h3 style="margin-bottom:6px">Naam wijzigen</h3>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input type="text" id="setting-name" placeholder="Nieuwe naam" />
-        <button class="btn btn-secondary" style="white-space:nowrap" onclick="saveName()">Opslaan</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- FRIEND DETAIL -->
-  <div id="screen-friend-detail" class="screen">
-    <div style="display:flex;align-items:center;gap:12px;padding-top:8px;margin-bottom:20px">
-      <button class="btn btn-secondary" style="padding:8px 14px" onclick="goTo('friends')">← Terug</button>
-      <h1 id="fd-name" style="font-size:1.8rem"></h1>
-    </div>
-    <div id="fd-content"></div>
-  </div>
-
-  <!-- NAV -->
-  <nav id="main-nav" style="display:none">
-    <button class="nav-btn active" onclick="goTo('home')" id="nav-home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
-    </button>
-    <button class="nav-btn" onclick="goTo('log')" id="nav-log">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Log
-    </button>
-    <button class="nav-btn" onclick="goTo('history')" id="nav-history">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><polyline points="12 6 12 12 16 14"/></svg>Historie
-    </button>
-    <button class="nav-btn" onclick="goTo('friends')" id="nav-friends">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Vrienden
-    </button>
-    <button class="nav-btn" onclick="goTo('stats')" id="nav-stats">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Stats
-    </button>
-  </nav>
-</div>
-
-<div class="xp-toast" id="xp-toast"></div>
-<div class="modal-overlay" id="workout-modal" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div id="modal-content"></div>
-    <div style="height:12px"></div>
-    <button class="btn btn-danger btn-full" onclick="deleteWorkout()">🗑 Verwijderen</button>
-    <div style="height:8px"></div>
-    <button class="btn btn-secondary btn-full" onclick="closeModal()">Sluiten</button>
-  </div>
-</div>
-
-<script src="data.js"></script>
-<script>
-const SUPA_URL = 'https://amthyrpmrhrpkfgchgfz.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGh5cnBtcmhycGtmZ2NoZ2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTA3ODAsImV4cCI6MjA5NTg4Njc4MH0.U2grBGFvAtW_U33NHCITZXz1TAhpAxglQ61TTEe66Hc';
-
-// ── SUPABASE ───────────────────────────────────────────────────────────────
-async function db(path, method, body) {
-  const opts = {
-    method: method || 'GET',
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + SUPA_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(SUPA_URL + '/rest/v1/' + path, opts);
-  const txt = await res.text();
-  if (!res.ok) throw new Error(txt || res.status);
-  if (!txt) return null;
-  try { return JSON.parse(txt); } catch(e) { return null; }
-}
-
-// ── STATE ──────────────────────────────────────────────────────────────────
-let CU = null; // current user
-let DB_local = { xp: {}, workouts: [], user: {} };
-let currentSets = [];
-let activeModal = null;
-
-const SPLIT = { 1:['borst','triceps','schouders'], 2:['rug','biceps'], 3:['benen','core'], 4:[], 5:['borst','rug'], 6:['biceps','triceps','schouders'], 0:['benen','core'] };
-const DAGEN = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
-
-function genCode() {
-  return Array.from({length:6}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
-}
-
-// ── LOGIN ──────────────────────────────────────────────────────────────────
-async function doLogin() {
-  const name = document.getElementById('login-name').value.trim();
-  if (!name) { alert('Voer je naam in!'); return; }
-  const btn = document.getElementById('login-btn');
-  btn.textContent = 'Laden...'; btn.disabled = true;
-  try {
-    let rows = await db('users?name=eq.' + encodeURIComponent(name) + '&limit=1');
-    if (rows && rows.length > 0) {
-      CU = rows[0];
-    } else {
-      CU = { id: 'u' + Date.now(), name: name, friend_code: genCode() };
-      await db('users', 'POST', CU);
-      for (const m of MUSCLES) {
-        await db('xp', 'POST', { user_id: CU.id, muscle: m.id, amount: 0 });
-      }
-    }
-    await syncDB();
-    localStorage.setItem('gu', JSON.stringify(CU));
-    startApp();
-  } catch(e) {
-    console.error(e);
-    alert('Fout: ' + e.message);
-    btn.textContent = 'Start 💪'; btn.disabled = false;
-  }
-}
-
-async function syncDB() {
-  const xpRows = await db('xp?user_id=eq.' + CU.id) || [];
-  DB_local.xp = {};
-  MUSCLES.forEach(m => DB_local.xp[m.id] = 0);
-  xpRows.forEach(r => DB_local.xp[r.muscle] = r.amount);
-  const ws = await db('workouts?user_id=eq.' + CU.id + '&order=date.desc&limit=100') || [];
-  DB_local.workouts = ws;
-  DB_local.user = { name: CU.name };
-}
-
-function startApp() {
-  document.getElementById('screen-login').style.display = 'none';
-  document.getElementById('main-nav').style.display = 'flex';
-  goTo('home');
-}
-
-// ── NAV ────────────────────────────────────────────────────────────────────
-function goTo(screen) {
-  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const el = document.getElementById('screen-' + screen);
-  if (el) { el.classList.add('active'); el.style.display = 'block'; }
-  const nb = document.getElementById('nav-' + screen);
-  if (nb) nb.classList.add('active');
-  if (screen === 'home') renderHome();
-  if (screen === 'log') renderLog();
-  if (screen === 'history') renderHistory();
-  if (screen === 'friends') renderFriends();
-  if (screen === 'stats') renderStats();
-}
-
-// ── HOME ───────────────────────────────────────────────────────────────────
-function renderHome() {
-  if (!CU) return;
-  document.getElementById('home-name').textContent = CU.name;
-  const lv = totalLevel(DB_local.xp);
-  document.getElementById('home-total-level').textContent = lv;
-  const now = new Date();
-  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
-  document.getElementById('home-week').textContent = DB_local.workouts.filter(w => new Date(w.date) >= weekStart).length;
-  document.getElementById('home-streak').textContent = calcStreak();
-  document.getElementById('home-total-w').textContent = DB_local.workouts.length;
-  renderChart();
-  renderTodaySplit();
-
-  const grid = document.getElementById('muscle-grid');
-  grid.innerHTML = '';
-  MUSCLES.forEach(m => {
-    const xp = DB_local.xp[m.id] || 0;
-    const p = levelProgress(xp);
-    const col = `hsl(${m.hue},60%,45%)`;
-    const c = document.createElement('div'); c.className = 'muscle-card';
-    c.innerHTML = `<div style="width:32px;height:4px;background:${col};border-radius:2px"></div>
-      <div style="font-family:var(--font-d);font-size:1.3rem;margin:6px 0 4px">${m.name}</div>
-      <div style="font-size:.75rem;color:${col};font-weight:600">LV ${p.level} <span style="color:var(--muted)">· ${xp.toLocaleString('nl')} XP</span></div>
-      <div style="height:8px"></div>
-      <div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div>`;
-    c.onclick = () => { exerciseBlocks = []; addExerciseBlock(m.id); goTo('log'); };
-    grid.appendChild(c);
-  });
-
-  const list = document.getElementById('recent-list');
-  const recent = [...DB_local.workouts].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,4);
-  list.innerHTML = recent.length ? '' : '<div class="empty">Nog geen workouts.</div>';
-  recent.forEach(w => list.appendChild(makeWorkoutCard(w)));
-}
-
-function calcStreak() {
-  const days = new Set(DB_local.workouts.map(w => w.date.slice(0,10)));
-  let streak = 0;
-  let cur = new Date();
-  const ts = cur.toISOString().slice(0,10);
-  const ys = new Date(Date.now()-86400000).toISOString().slice(0,10);
-  if (!days.has(ts) && !days.has(ys)) return 0;
-  if (!days.has(ts)) cur = new Date(Date.now()-86400000);
-  while (days.has(cur.toISOString().slice(0,10))) { streak++; cur = new Date(cur.getTime()-86400000); }
-  return streak;
-}
-
-function renderChart() {
-  const el = document.getElementById('home-chart'); if (!el) return;
-  const n = 14;
-  const counts = Array.from({length:n}, (_,i) => {
-    const d = new Date(); d.setDate(d.getDate()-(n-1-i));
-    return DB_local.workouts.filter(w => w.date.slice(0,10) === d.toISOString().slice(0,10)).length;
-  });
-  const max = Math.max(...counts, 1);
-  el.innerHTML = counts.map((c,i) => {
-    const h = c > 0 ? Math.max(c/max*100, 15) : 4;
-    const today = i === n-1;
-    const col = c > 0 ? (today ? 'var(--accent)' : '#a07830') : 'var(--bg3)';
-    const d = new Date(); d.setDate(d.getDate()-(n-1-i));
-    const lbl = d.toLocaleDateString('nl-NL',{weekday:'narrow'});
-    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-      <div style="width:100%;background:${col};border-radius:3px 3px 0 0;height:${h}%;min-height:${c>0?6:3}px"></div>
-      <div style="font-size:.55rem;color:${today?'var(--accent)':'var(--muted)'};font-weight:${today?700:400}">${lbl}</div>
-    </div>`;
-  }).join('');
-}
-
-function renderTodaySplit() {
-  const dag = new Date().getDay();
-  const sp = SPLIT[dag] || [];
-  const el = document.getElementById('today-split-card'); if (!el) return;
-  if (!sp.length) {
-    el.innerHTML = `<div class="card"><h3 style="margin-bottom:6px">Vandaag · ${DAGEN[dag]}</h3><div style="font-family:var(--font-d);font-size:1.6rem;color:var(--muted)">Rustdag 🛋</div></div>`;
-    return;
-  }
-  const chips = sp.map(id => {
-    const m = MUSCLES.find(x=>x.id===id); if (!m) return '';
-    const col = `hsl(${m.hue},60%,45%)`;
-    return `<span style="background:${col}18;border:1px solid ${col}44;border-radius:99px;padding:4px 12px;font-size:.82rem;font-weight:600;color:${col}">${m.name}</span>`;
-  }).join('');
-  el.innerHTML = `<div class="card" style="border-color:var(--accent)44">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <h3>Vandaag · ${DAGEN[dag]}</h3>
-      <span style="font-size:.7rem;color:var(--accent);font-weight:700">JOUW SPLIT</span>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${chips}</div>
-    <button class="btn btn-primary btn-full" style="padding:11px" onclick="startToday()">💪 Start training</button>
-  </div>`;
-}
-
-function startToday() {
-  const sp = SPLIT[new Date().getDay()] || [];
-  if (!sp.length) return;
-  exerciseBlocks = [];
-  sp.forEach(mid => addExerciseBlock(mid));
-  goTo('log');
-}
-
-// ── LOG ────────────────────────────────────────────────────────────────────
-// exerciseBlocks: [{muscleId, exId, sets:[{reps,weight,unit}]}]
-let exerciseBlocks = [];
-
-function renderLog() {
-  if (!exerciseBlocks.length) addExerciseBlock();
-  else renderAllBlocks();
-}
-
-function onMuscleChange() {}
-function onExerciseChange() {}
-function addSet() {}
-function renderSets() {}
-function updateSet() {}
-function removeSet() {}
-
-function addExerciseBlock(prefillMuscle) {
-  const mid = prefillMuscle || MUSCLES[0].id;
-  const exList = EXERCISES[mid] || [];
-  const ex = exList[0];
-  if (!ex) return;
-  exerciseBlocks.push({ muscleId: mid, exId: ex.id, sets: [{ reps: ex.defaultReps, weight: ex.defaultWeight, unit: ex.unit }] });
-  renderAllBlocks();
-}
-
-function renderAllBlocks() {
-  const container = document.getElementById('exercise-blocks');
-  if (!container) return;
-  container.innerHTML = '';
-  exerciseBlocks.forEach((block, bi) => {
-    const exList = EXERCISES[block.muscleId] || [];
-    const totalXpBlock = block.sets.reduce((t,s) => t + setXP(s, s.unit), 0);
-    const m = MUSCLES.find(x => x.id === block.muscleId);
-    const col = m ? `hsl(${m.hue},60%,45%)` : 'var(--accent)';
-
-    const div = document.createElement('div');
-    div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)';
-
-    // Muscle + exercise selectors
-    const selRow = document.createElement('div');
-    selRow.style.cssText = 'display:flex;gap:6px;margin-bottom:10px;align-items:center';
-    selRow.innerHTML = `
-      <select style="flex:1;background:var(--bg3);border:1px solid ${col};border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.82rem;padding:8px;outline:none;-webkit-appearance:none;font-weight:600;color:${col}" onchange="changeBlockMuscle(${bi},this.value)">
-        ${MUSCLES.map(mu => `<option value="${mu.id}" ${mu.id===block.muscleId?'selected':''}>${mu.name}</option>`).join('')}
-      </select>
-      <select style="flex:2;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.82rem;padding:8px;outline:none;-webkit-appearance:none" onchange="changeExercise(${bi},this.value)">
-        ${exList.map(e => `<option value="${e.id}" ${e.id===block.exId?'selected':''}>${e.name}</option>`).join('')}
-      </select>
-      <div style="display:flex;align-items:center;gap:4px">
-        <span style="font-size:.72rem;color:var(--accent);font-weight:700;white-space:nowrap">+${totalXpBlock}xp</span>
-        ${exerciseBlocks.length > 1 ? `<button onclick="removeBlock(${bi})" style="background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:2px 4px">✕</button>` : ''}
-      </div>`;
-    div.appendChild(selRow);
-
-    // Sets
-    const setsDiv = document.createElement('div');
-    block.sets.forEach((s, si) => {
-      const isBW = s.unit === 'bw', isSec = s.unit === 'sec';
-      const row = document.createElement('div');
-      row.className = 'set-row';
-      row.innerHTML = `<div class="set-num">${si+1}</div>
-        <div style="flex:1;display:flex;gap:6px">
-          <div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${s.reps}" onchange="updateBlockSet(${bi},${si},'reps',this.value)"><div class="set-label">${isSec?'sec':'reps'}</div></div>
-          ${!isBW?`<div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${s.weight}" onchange="updateBlockSet(${bi},${si},'weight',this.value)"><div class="set-label">${s.unit}</div></div>`:''}
-          <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:.72rem;color:var(--accent);font-weight:700">+${setXP(s,s.unit)}xp</span></div>
-        </div>
-        <button class="set-delete" onclick="removeBlockSet(${bi},${si})">✕</button>`;
-      setsDiv.appendChild(row);
-    });
-    div.appendChild(setsDiv);
-
-    const addBtn = document.createElement('button');
-    addBtn.className = 'btn btn-secondary';
-    addBtn.style.cssText = 'padding:6px 14px;font-size:.8rem;margin-top:6px;width:100%';
-    addBtn.textContent = '+ Set';
-    addBtn.onclick = () => addBlockSet(bi);
-    div.appendChild(addBtn);
-    container.appendChild(div);
-  });
-}
-
-function changeBlockMuscle(bi, mid) {
-  const exList = EXERCISES[mid] || [];
-  const ex = exList[0];
-  exerciseBlocks[bi].muscleId = mid;
-  exerciseBlocks[bi].exId = ex ? ex.id : '';
-  exerciseBlocks[bi].sets = [{ reps: ex ? ex.defaultReps : 10, weight: ex ? ex.defaultWeight : 0, unit: ex ? ex.unit : 'kg' }];
-  renderAllBlocks();
-}
-
-function changeExercise(bi, exId) {
-  const mid = exerciseBlocks[bi].muscleId;
-  const ex = exerciseById(mid, exId);
-  exerciseBlocks[bi].exId = exId;
-  exerciseBlocks[bi].sets = [{ reps: ex ? ex.defaultReps : 10, weight: ex ? ex.defaultWeight : 0, unit: ex ? ex.unit : 'kg' }];
-  renderAllBlocks();
-}
-
-function addBlockSet(bi) {
-  const last = exerciseBlocks[bi].sets[exerciseBlocks[bi].sets.length - 1];
-  exerciseBlocks[bi].sets.push({ ...last });
-  renderAllBlocks();
-}
-
-function removeBlockSet(bi, si) {
-  if (exerciseBlocks[bi].sets.length <= 1) return;
-  exerciseBlocks[bi].sets.splice(si, 1);
-  renderAllBlocks();
-}
-
-function updateBlockSet(bi, si, k, v) {
-  exerciseBlocks[bi].sets[si][k] = Number(v);
-  renderAllBlocks();
-}
-
-function removeBlock(bi) {
-  exerciseBlocks.splice(bi, 1);
-  renderAllBlocks();
-}
-
-async function saveWorkout() {
-  if (!exerciseBlocks.length) { alert('Voeg eerst een oefening toe.'); return; }
-
-  // Group sets per muscle
-  const byMuscle = {};
-  exerciseBlocks.forEach(block => {
-    if (!byMuscle[block.muscleId]) byMuscle[block.muscleId] = [];
-    block.sets.forEach(s => byMuscle[block.muscleId].push({ exercise: block.exId, reps: s.reps, weight: s.weight, unit: s.unit }));
-  });
-
-  const muscleIds = Object.keys(byMuscle);
-  const allSets = exerciseBlocks.flatMap(block => block.sets.map(s => ({ exercise: block.exId, muscle: block.muscleId, reps: s.reps, weight: s.weight, unit: s.unit })));
-  const xpGained = allSets.reduce((t, s) => t + setXP(s, s.unit), 0);
-
-  // Use first muscle as primary for workout label, or 'mix' 
-  const primaryMuscle = muscleIds.length === 1 ? muscleIds[0] : muscleIds[0];
-  const workout = { id: 'w' + Date.now(), user_id: CU.id, date: new Date().toISOString(), muscle: primaryMuscle, muscles: muscleIds, sets: allSets };
-
-  try {
-    await db('workouts', 'POST', workout);
-    // Update XP for each muscle
-    for (const mid of muscleIds) {
-      const muscleXP = byMuscle[mid].reduce((t,s) => t + setXP(s, s.unit), 0);
-      const newXP = (DB_local.xp[mid] || 0) + muscleXP;
-      await db('xp?user_id=eq.' + CU.id + '&muscle=eq.' + mid, 'PATCH', { amount: newXP });
-      DB_local.xp[mid] = newXP;
-    }
-    DB_local.workouts.unshift(workout);
-    showToast('+' + xpGained + ' XP');
-    exerciseBlocks = [];
-    setTimeout(() => goTo('home'), 400);
-  } catch(e) { alert('Fout: ' + e.message); }
-}
-
-// ── HISTORY ────────────────────────────────────────────────────────────────
-function renderHistory() {
-  const list = document.getElementById('history-list');
-  const sorted = [...DB_local.workouts].sort((a,b) => new Date(b.date)-new Date(a.date));
-  list.innerHTML = sorted.length ? '' : '<div class="empty">Nog geen workouts.</div>';
-  sorted.forEach(w => list.appendChild(makeWorkoutCard(w)));
-}
-
-function makeWorkoutCard(w) {
-  const m = MUSCLES.find(x=>x.id===w.muscle) || {name:w.muscle,hue:200};
-  const col = `hsl(${m.hue},60%,45%)`;
-  const xpW = w.sets.reduce((t,s) => t+setXP(s,s.unit), 0);
-  const summary = w.sets.slice(0,3).map(s => {
-    const ex = exerciseById(w.muscle, s.exercise); const n = ex ? ex.name : s.exercise;
-    return s.unit==='bw' ? `${n} ${s.reps}r` : s.unit==='sec' ? `${n} ${s.reps}s` : `${n} ${s.reps}×${s.weight}`;
-  }).join(' · ') + (w.sets.length>3 ? ` +${w.sets.length-3}` : '');
-  const card = document.createElement('div'); card.className = 'card'; card.style.cursor = 'pointer';
-  card.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-    <div style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0"></div>
-    <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:${col}">${m.name}</span>
-    <span style="font-size:.75rem;color:var(--accent)">+${xpW} XP</span>
-    <span style="font-size:.75rem;color:var(--muted);margin-left:auto">${formatDate(w.date)}</span>
-  </div>
-  <div style="font-size:.82rem;color:var(--muted)">${summary || '—'}</div>`;
-  card.onclick = () => openModal(w.id);
-  return card;
-}
-
-// ── MODAL ──────────────────────────────────────────────────────────────────
-function openModal(id) {
-  activeModal = id;
-  const w = DB_local.workouts.find(x=>x.id===id); if (!w) return;
-  const m = MUSCLES.find(x=>x.id===w.muscle) || {name:w.muscle,hue:200};
-  const col = `hsl(${m.hue},60%,45%)`;
-  let html = `<h2 style="color:${col};margin-bottom:4px">${m.name}</h2>
-    <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">${new Date(w.date).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})}</div>`;
-  w.sets.forEach((s,i) => {
-    const ex = exerciseById(w.muscle, s.exercise); const n = ex ? ex.name : s.exercise;
-    const val = s.unit==='bw' ? `${s.reps} reps` : s.unit==='sec' ? `${s.reps} sec` : `${s.reps} × ${s.weight} ${s.unit}`;
-    html += `<div class="set-row"><div class="set-num">${i+1}</div><div style="flex:1"><strong>${n}</strong><br><span style="font-size:.82rem;color:var(--muted)">${val}</span></div><span style="font-size:.75rem;color:var(--accent)">+${setXP(s,s.unit)}xp</span></div>`;
-  });
-  document.getElementById('modal-content').innerHTML = html;
-  document.getElementById('workout-modal').classList.add('open');
-}
-
-function closeModal() { document.getElementById('workout-modal').classList.remove('open'); activeModal = null; }
-
-async function deleteWorkout() {
-  if (!activeModal) return;
-  const w = DB_local.workouts.find(x=>x.id===activeModal); if (!w) return;
-  const lost = w.sets.reduce((t,s)=>t+setXP(s,s.unit),0);
-  try {
-    await db('workouts?id=eq.' + activeModal, 'DELETE');
-    const newXP = Math.max(0, (DB_local.xp[w.muscle]||0) - lost);
-    await db('xp?user_id=eq.' + CU.id + '&muscle=eq.' + w.muscle, 'PATCH', { amount: newXP });
-    DB_local.xp[w.muscle] = newXP;
-    DB_local.workouts = DB_local.workouts.filter(x=>x.id!==activeModal);
-    closeModal(); renderHistory();
-  } catch(e) { alert('Fout: ' + e.message); }
-}
-
-// ── FRIENDS ────────────────────────────────────────────────────────────────
-let currentTab = 'leaderboard';
-
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('tab-content-leaderboard').style.display = tab === 'leaderboard' ? 'block' : 'none';
-  document.getElementById('tab-content-friends').style.display = tab === 'friends' ? 'block' : 'none';
-  // Style active tab
-  const lb = document.getElementById('tab-leaderboard');
-  const fr = document.getElementById('tab-friends');
-  lb.style.background = tab === 'leaderboard' ? 'var(--bg2)' : 'none';
-  lb.style.color = tab === 'leaderboard' ? 'var(--text)' : 'var(--muted)';
-  lb.style.boxShadow = tab === 'leaderboard' ? '0 1px 4px rgba(0,0,0,.08)' : 'none';
-  fr.style.background = tab === 'friends' ? 'var(--bg2)' : 'none';
-  fr.style.color = tab === 'friends' ? 'var(--text)' : 'var(--muted)';
-  fr.style.boxShadow = tab === 'friends' ? '0 1px 4px rgba(0,0,0,.08)' : 'none';
-}
-
-async function getUserData(userId) {
-  const xpRows = await db('xp?user_id=eq.' + userId) || [];
-  const xmap = {}; MUSCLES.forEach(m => xmap[m.id] = 0);
-  xpRows.forEach(r => xmap[r.muscle] = r.amount);
-  const workouts = await db('workouts?user_id=eq.' + userId + '&order=date.desc&limit=100') || [];
-  return { xmap, workouts };
-}
-
-async function renderFriends() {
-  if (!CU) return;
-  document.getElementById('my-friend-code').textContent = CU.friend_code;
-  switchTab(currentTab);
-
-  // Load leaderboard
-  renderLeaderboard();
-
-  // Load friends list
-  const list = document.getElementById('friends-list');
-  list.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted)"><div class="spinner"></div> Laden...</div>';
-  try {
-    const links = await db('friends?user_id=eq.' + CU.id) || [];
-    if (!links.length) { list.innerHTML = '<div class="empty">Nog geen vrienden.<br>Deel jouw code om te beginnen!</div>'; return; }
-    list.innerHTML = '';
-    for (const link of links) {
-      const fu = await db('users?id=eq.' + link.friend_id + '&limit=1');
-      if (!fu || !fu[0]) continue;
-      const f = fu[0];
-      const { xmap } = await getUserData(f.id);
-      const lv = totalLevel(xmap);
-      const card = document.createElement('div');
-      card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer';
-      card.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between">
-        <div><div style="font-family:var(--font-d);font-size:1.3rem">${f.name}</div><div style="font-size:.72rem;color:var(--muted)">Code: ${f.friend_code}</div></div>
-        <div style="text-align:right"><div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${lv}</div><div style="font-size:.65rem;color:var(--muted)">LEVEL</div></div>
-      </div>`;
-      card.onclick = () => openFriendDetail(f, xmap);
-      list.appendChild(card);
-    }
-  } catch(e) { list.innerHTML = '<div class="empty">Kon vrienden niet laden.</div>'; console.error(e); }
-}
-
-async function renderLeaderboard() {
-  const el = document.getElementById('leaderboard-list'); if (!el) return;
-  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted)"><div class="spinner"></div> Laden...</div>';
-  try {
-    // Get friends
-    const links = await db('friends?user_id=eq.' + CU.id) || [];
-    const friendIds = links.map(l => l.friend_id);
-
-    // Build entries: self + friends
-    const allIds = [CU.id, ...friendIds];
-    const entries = [];
-
-    for (const uid of allIds) {
-      let name, friendCode;
-      if (uid === CU.id) { name = CU.name; friendCode = CU.friend_code; }
-      else {
-        const fu = await db('users?id=eq.' + uid + '&limit=1');
-        if (!fu || !fu[0]) continue;
-        name = fu[0].name; friendCode = fu[0].friend_code;
-      }
-      const { xmap, workouts } = await getUserData(uid);
-      const lv = totalLevel(xmap);
-      const xp = totalXP(xmap);
-      // Week workouts
-      const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      const weekW = workouts.filter(w => new Date(w.date) >= weekStart).length;
-      // Streak
-      const days = new Set(workouts.map(w => w.date.slice(0,10)));
-      let streak = 0, cur = new Date();
-      const ts = cur.toISOString().slice(0,10), ys = new Date(Date.now()-86400000).toISOString().slice(0,10);
-      if (days.has(ts) || days.has(ys)) {
-        if (!days.has(ts)) cur = new Date(Date.now()-86400000);
-        while (days.has(cur.toISOString().slice(0,10))) { streak++; cur = new Date(cur.getTime()-86400000); }
-      }
-      entries.push({ uid, name, lv, xp, weekW, streak, isMe: uid === CU.id });
-    }
-
-    // Sort by total XP
-    entries.sort((a,b) => b.xp - a.xp);
-
-    const medals = ['🥇','🥈','🥉'];
-    el.innerHTML = '';
-    entries.forEach((e, i) => {
-      const isTop = i < 3;
-      const card = document.createElement('div');
-      card.style.cssText = `background:${e.isMe ? 'var(--accent)18' : 'var(--bg2)'};border:1px solid ${e.isMe ? 'var(--accent)44' : 'var(--border)'};border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)`;
-      card.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-size:1.6rem;min-width:36px;text-align:center">${isTop ? medals[i] : '#'+(i+1)}</div>
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-family:var(--font-d);font-size:1.2rem">${e.name}</span>
-              ${e.isMe ? '<span style="font-size:.65rem;background:var(--accent);color:#111;padding:1px 7px;border-radius:99px;font-weight:700">JIJ</span>' : ''}
-            </div>
-            <div style="display:flex;gap:10px;margin-top:4px">
-              <span style="font-size:.72rem;color:var(--muted)">🏋️ ${e.weekW} deze week</span>
-              <span style="font-size:.72rem;color:var(--muted)">🔥 ${e.streak} streak</span>
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${e.lv}</div>
-            <div style="font-size:.65rem;color:var(--muted)">LEVEL</div>
-          </div>
-        </div>`;
-      el.appendChild(card);
-    });
-
-    if (!entries.length) el.innerHTML = '<div class="empty">Voeg vrienden toe om te vergelijken!</div>';
-  } catch(err) {
-    el.innerHTML = '<div class="empty">Kon leaderboard niet laden.</div>';
-    console.error(err);
-  }
-}
-
-async function addFriend() {
-  const code = document.getElementById('friend-input').value.trim().toUpperCase();
-  if (code.length < 4) { alert('Voer een geldige code in!'); return; }
-  if (code === CU.friend_code) { alert('Dat is jouw eigen code!'); return; }
-  try {
-    const found = await db('users?friend_code=eq.' + code + '&limit=1');
-    if (!found || !found[0]) { alert('Geen gebruiker gevonden met deze code.'); return; }
-    const f = found[0];
-    const existing = await db('friends?user_id=eq.' + CU.id + '&friend_id=eq.' + f.id);
-    if (existing && existing.length) { alert(f.name + ' is al jouw vriend!'); return; }
-    await db('friends', 'POST', { user_id: CU.id, friend_id: f.id });
-    document.getElementById('friend-input').value = '';
-    alert(f.name + ' toegevoegd! 🎉');
-    renderFriends();
-  } catch(e) { alert('Fout: ' + e.message); }
-}
-
-function copyCode() {
-  navigator.clipboard.writeText(CU.friend_code).then(() => alert('Code gekopieerd: ' + CU.friend_code)).catch(() => alert('Jouw code: ' + CU.friend_code));
-}
-
-function openFriendDetail(f, xmap) {
-  document.getElementById('fd-name').textContent = f.name;
-  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const el = document.getElementById('screen-friend-detail');
-  el.classList.add('active'); el.style.display = 'block';
-  const lv = totalLevel(xmap);
-  const tier = tierForLevel(Math.round(lv / MUSCLES.length));
-  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-    <div class="card"><div style="font-family:var(--font-d);font-size:2rem;color:var(--accent)">${lv}</div><div style="font-size:.75rem;color:var(--muted)">Totaal Level</div></div>
-    <div class="card"><div style="font-family:var(--font-d);font-size:1.4rem;color:${tier.color}">${tier.name}</div><div style="font-size:.75rem;color:var(--muted)">Rang</div></div>
-  </div><h3 style="margin-bottom:10px">Per spiergroep</h3>`;
-  MUSCLES.forEach(m => {
-    const xp = xmap[m.id]||0; const p = levelProgress(xp); const col = `hsl(${m.hue},60%,45%)`;
-    html += `<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:8px">
-      <span style="font-family:var(--font-d);font-size:1.1rem;color:${col}">${m.name}</span>
-      <span style="font-size:.8rem;color:var(--muted)">LV ${p.level} · ${xp.toLocaleString('nl')} XP</span>
-    </div><div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div></div>`;
-  });
-  document.getElementById('fd-content').innerHTML = html;
-}
-
-// ── BADGES ─────────────────────────────────────────────────────────────────
-const BADGES = [
-  // Workout count
-  { id: 'first',     icon: '🏋️', name: 'Eerste stap',    desc: 'Log je eerste workout',        check: (w,xp,s) => w >= 1 },
-  { id: 'ten',       icon: '💪', name: 'Op gang',         desc: '10 workouts gelogd',           check: (w,xp,s) => w >= 10 },
-  { id: 'twenty5',   icon: '🔥', name: 'Op dreef',        desc: '25 workouts gelogd',           check: (w,xp,s) => w >= 25 },
-  { id: 'fifty',     icon: '💎', name: 'Veteraan',        desc: '50 workouts gelogd',           check: (w,xp,s) => w >= 50 },
-  { id: 'hundred',   icon: '👑', name: 'Legende',         desc: '100 workouts gelogd',          check: (w,xp,s) => w >= 100 },
-  // Streak
-  { id: 'streak3',   icon: '📅', name: '3 dagen op rij',  desc: '3 dagen streak',               check: (w,xp,s) => s >= 3 },
-  { id: 'streak7',   icon: '⚡', name: 'Week warrior',    desc: '7 dagen streak',               check: (w,xp,s) => s >= 7 },
-  { id: 'streak14',  icon: '🌟', name: '2 weken non-stop',desc: '14 dagen streak',              check: (w,xp,s) => s >= 14 },
-  { id: 'streak30',  icon: '🐉', name: 'Onstopbaar',      desc: '30 dagen streak',              check: (w,xp,s) => s >= 30 },
-  // XP
-  { id: 'xp1k',      icon: '🌱', name: 'Beginner',        desc: '1.000 totale XP',              check: (w,xp,s) => xp >= 1000 },
-  { id: 'xp5k',      icon: '⭐', name: 'Gevorderd',       desc: '5.000 totale XP',              check: (w,xp,s) => xp >= 5000 },
-  { id: 'xp10k',     icon: '🏆', name: 'Expert',          desc: '10.000 totale XP',             check: (w,xp,s) => xp >= 10000 },
-  { id: 'xp25k',     icon: '💫', name: 'Elite',           desc: '25.000 totale XP',             check: (w,xp,s) => xp >= 25000 },
-  // Level milestones
-  { id: 'lv10',      icon: '🦁', name: 'Level 10',        desc: 'Bereik level 10 op een spiergroep', check: (w,xp,s,xpMap) => Object.values(xpMap).some(x => levelFromXP(x) >= 10) },
-  { id: 'lv20',      icon: '🔱', name: 'Level 20',        desc: 'Bereik level 20 op een spiergroep', check: (w,xp,s,xpMap) => Object.values(xpMap).some(x => levelFromXP(x) >= 20) },
-  // Special
-  { id: 'allround',  icon: '🎯', name: 'Allrounder',      desc: 'Train alle 7 spiergroepen',    check: (w,xp,s,xpMap) => Object.values(xpMap).every(x => x > 0) },
-  { id: 'bigweek',   icon: '📈', name: 'Grote week',      desc: '5 workouts in 1 week',         check: (w,xp,s,xpMap,wkW) => wkW >= 5 },
+// data.js — fitness app data model, XP math, demo data, persistence
+
+const STORAGE_KEY = "gym_data_v4";
+
+const MUSCLES = [
+  { id: "borst",     name: "Borst",     hue: 18 },
+  { id: "rug",       name: "Rug",       hue: 200 },
+  { id: "benen",     name: "Benen",     hue: 260 },
+  { id: "biceps",    name: "Biceps",    hue: 40 },
+  { id: "triceps",   name: "Triceps",   hue: 160 },
+  { id: "schouders", name: "Schouders", hue: 320 },
+  { id: "core",      name: "Core",      hue: 140 },
 ];
 
-function renderBadges() {
-  const el = document.getElementById('badges-grid'); if (!el) return;
-  const workoutCount = DB_local.workouts.length;
-  const xp = totalXP(DB_local.xp);
-  const streak = calcStreak();
-  const now = new Date();
-  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
-  const weekWorkouts = DB_local.workouts.filter(w => new Date(w.date) >= weekStart).length;
+const EXERCISES = {
+  borst: [
+    { id: "inclinesmith", name: "Incline Smith",       unit: "kg", defaultReps: 10, defaultWeight: 40 },
+    { id: "pecdeck",      name: "Pec Deck",            unit: "kg", defaultReps: 12, defaultWeight: 30 },
+    { id: "hightolowcable", name: "High to Low Cable", unit: "kg", defaultReps: 12, defaultWeight: 15 },
+    { id: "dips",         name: "Dips",                unit: "bw", defaultReps: 10, defaultWeight: 0  },
+    { id: "chestpress",   name: "Chest Press",         unit: "kg", defaultReps: 10, defaultWeight: 50 },
+  ],
+  rug: [
+    { id: "pullup",    name: "Weighted Pull-ups", unit: "kg", defaultReps: 8,  defaultWeight: 0  },
+    { id: "lat",       name: "Lat Pulldown",     unit: "kg", defaultReps: 10, defaultWeight: 50 },
+    { id: "row",       name: "Rows",             unit: "kg", defaultReps: 10, defaultWeight: 50 },
+    { id: "upperback", name: "Upper Back Rows",  unit: "kg", defaultReps: 12, defaultWeight: 30 },
+  ],
+  benen: [
+    { id: "smithsquat",  name: "Smith Squats",       unit: "kg", defaultReps: 10, defaultWeight: 60  },
+    { id: "legpress",    name: "Leg Press",           unit: "kg", defaultReps: 10, defaultWeight: 140 },
+    { id: "calfraise",   name: "Calf Raise",          unit: "kg", defaultReps: 15, defaultWeight: 40  },
+    { id: "hamstring",   name: "Hamstring Machine",   unit: "kg", defaultReps: 12, defaultWeight: 40  },
+  ],
+  biceps: [
+    { id: "hammer",   name: "Hammer Curls",      unit: "kg", defaultReps: 10, defaultWeight: 14 },
+    { id: "preacher", name: "Preacher Machine",  unit: "kg", defaultReps: 10, defaultWeight: 20 },
+  ],
+  triceps: [
+    { id: "singlepushdown", name: "Single Arm Pushdown",  unit: "kg", defaultReps: 12, defaultWeight: 15 },
+    { id: "overheadpress",  name: "Overhead Press",       unit: "kg", defaultReps: 12, defaultWeight: 20 },
+  ],
+  schouders: [
+    { id: "singlelateral",  name: "Single Arm Lat Raise", unit: "kg", defaultReps: 12, defaultWeight: 8  },
+    { id: "shoulderpress",  name: "Shoulder Press",       unit: "kg", defaultReps: 10, defaultWeight: 30 },
+    { id: "reardelts",      name: "Rear Delts",           unit: "kg", defaultReps: 12, defaultWeight: 10 },
+  ],
+  core: [
+    { id: "cablecr",  name: "Cable Crunch",          unit: "kg", defaultReps: 15, defaultWeight: 30 },
+    { id: "legraise", name: "Leg Raise",              unit: "bw", defaultReps: 15, defaultWeight: 0  },
+    { id: "obliques", name: "Obliques Twist",         unit: "kg", defaultReps: 20, defaultWeight: 8  },
+    { id: "declineabs", name: "Decline Weighted Abs", unit: "kg", defaultReps: 15, defaultWeight: 10 },
+  ],
+};
 
-  el.innerHTML = '';
-  BADGES.forEach(b => {
-    const unlocked = b.check(workoutCount, xp, streak, DB_local.xp, weekWorkouts);
-    const div = document.createElement('div');
-    div.style.cssText = `background:${unlocked ? 'var(--bg2)' : 'var(--bg3)'};border:1px solid ${unlocked ? 'var(--accent)44' : 'var(--border)'};border-radius:12px;padding:10px 8px;text-align:center;transition:all .2s;opacity:${unlocked ? '1' : '0.45'}`;
-    div.innerHTML = `
-      <div style="font-size:1.6rem;margin-bottom:4px">${b.icon}</div>
-      <div style="font-size:.72rem;font-weight:700;color:${unlocked ? 'var(--text)' : 'var(--muted)'};line-height:1.2">${b.name}</div>
-      <div style="font-size:.62rem;color:var(--muted);margin-top:3px;line-height:1.3">${b.desc}</div>
-      ${unlocked ? '<div style="font-size:.6rem;color:var(--accent);font-weight:700;margin-top:4px">✓ BEHAALD</div>' : ''}
-    `;
-    if (unlocked) div.title = b.desc;
-    el.appendChild(div);
-  });
+// XP math --------------------------------------------------------------------
+function xpForLevel(n) {
+  if (n <= 1) return 0;
+  if (n >= 99) n = 99;
+  return Math.round(100 * Math.pow(n - 1, 1.4));
 }
 
-// ── STATS ──────────────────────────────────────────────────────────────────
-function renderStats() {
-  document.getElementById('s-workouts').textContent = DB_local.workouts.length;
-  document.getElementById('s-sets').textContent = DB_local.workouts.reduce((t,w)=>t+w.sets.length,0);
-  document.getElementById('s-xp').textContent = totalXP(DB_local.xp).toLocaleString('nl');
-  document.getElementById('s-level').textContent = totalLevel(DB_local.xp);
-  const cont = document.getElementById('stats-muscles'); cont.innerHTML = '';
-  MUSCLES.forEach(m => {
-    const xp = DB_local.xp[m.id]||0; const p = levelProgress(xp); const col = `hsl(${m.hue},60%,45%)`;
-    const d = document.createElement('div'); d.className = 'card';
-    d.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px">
-      <span style="font-family:var(--font-d);font-size:1.1rem;color:${col}">${m.name}</span>
-      <span style="font-size:.8rem;color:var(--muted)">LV ${p.level} · ${xp.toLocaleString('nl')} XP</span>
-    </div><div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div>
-    <div style="text-align:right;font-size:.7rem;color:var(--muted);margin-top:4px">${p.intoXP} / ${p.spanXP} XP naar LV ${p.level+1}</div>`;
-    cont.appendChild(d);
-  });
-  if (CU) document.getElementById('setting-name').value = CU.name;
-  renderBadges();
+function levelFromXP(xp) {
+  if (xp <= 0) return 1;
+  for (let n = 99; n >= 1; n--) {
+    if (xp >= xpForLevel(n)) return n;
+  }
+  return 1;
 }
 
-async function saveName() {
-  const val = document.getElementById('setting-name').value.trim(); if (!val) return;
+function levelProgress(xp) {
+  const lvl = levelFromXP(xp);
+  if (lvl >= 99) return { level: 99, into: 1, span: 1, intoXP: 0, spanXP: 0, nextAt: xpForLevel(99) };
+  const base = xpForLevel(lvl);
+  const next = xpForLevel(lvl + 1);
+  const span = next - base;
+  const into = xp - base;
+  return { level: lvl, into: into / span, intoXP: into, spanXP: span, nextAt: next };
+}
+
+function setXP(set, unit) {
+  const reps = Number(set.reps) || 0;
+  const w    = Number(set.weight) || 0;
+  if (unit === "bw")  return Math.round(reps * 8);
+  if (unit === "sec") return Math.round(reps * 0.3);
+  return Math.round(reps * Math.max(w, 1) * 0.4);
+}
+
+const TIERS = [
+  { min: 1,  max: 9,   name: "Brons",   color: "#a06942" },
+  { min: 10, max: 19,  name: "Zilver",  color: "#9aa0a8" },
+  { min: 20, max: 34,  name: "Goud",    color: "#d4a23a" },
+  { min: 35, max: 49,  name: "Platina", color: "#6cb3b8" },
+  { min: 50, max: 69,  name: "Diamant", color: "#5b8fd6" },
+  { min: 70, max: 89,  name: "Meester", color: "#9d6dd0" },
+  { min: 90, max: 99,  name: "Legende", color: "#ff7a3d" },
+];
+function tierForLevel(n) {
+  return TIERS.find(t => n >= t.min && n <= t.max) || TIERS[0];
+}
+
+// Demo data ------------------------------------------------------------------
+function demoData() {
+  const today = new Date();
+  const day = (offset) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - offset);
+    return d.toISOString();
+  };
+  return {
+    user: { name: "Sam", since: day(120) },
+    xp: {
+      borst: 0, rug: 0, benen: 0,
+      biceps: 0, triceps: 0, schouders: 0, core: 0,
+    },
+    workouts: [],
+  };
+}
+
+// Persistence ----------------------------------------------------------------
+function loadData() {
   try {
-    await db('users?id=eq.' + CU.id, 'PATCH', { name: val });
-    CU.name = val; DB_local.user.name = val;
-    localStorage.setItem('gu', JSON.stringify(CU));
-    alert('Naam opgeslagen!');
-  } catch(e) { alert('Fout: ' + e.message); }
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return demoData();
+    return JSON.parse(raw);
+  } catch (e) {
+    return demoData();
+  }
+}
+function saveData(d) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch (e) {}
+}
+function resetData() {
+  const fresh = demoData();
+  saveData(fresh);
+  return fresh;
+}
+function clearAll() {
+  const empty = {
+    user: { name: "Sam", since: new Date().toISOString() },
+    xp: { borst: 0, rug: 0, benen: 0, biceps: 0, triceps: 0, schouders: 0, core: 0 },
+    workouts: [],
+  };
+  saveData(empty);
+  return empty;
 }
 
-// ── UTILS ──────────────────────────────────────────────────────────────────
-function showToast(msg) {
-  const el = document.getElementById('xp-toast');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2000);
+// Helpers --------------------------------------------------------------------
+function exerciseById(muscleId, exId) {
+  return (EXERCISES[muscleId] || []).find(e => e.id === exId);
+}
+function totalLevel(xpMap) {
+  return Object.values(xpMap).reduce((sum, x) => sum + levelFromXP(x), 0);
+}
+function totalXP(xpMap) {
+  return Object.values(xpMap).reduce((sum, x) => sum + x, 0);
+}
+function formatDate(iso) {
+  const d = new Date(iso);
+  const today = new Date();
+  const diff = Math.floor((today - d) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "Vandaag";
+  if (diff === 1) return "Gisteren";
+  if (diff < 7) return `${diff} dagen geleden`;
+  return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" });
 }
 
-// ── INIT ───────────────────────────────────────────────────────────────────
-document.getElementById('friend-input').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
-
-const saved = localStorage.getItem('gu');
-if (saved) {
-  try {
-    CU = JSON.parse(saved);
-    syncDB().then(startApp).catch(err => {
-      console.error('Auto-login failed:', err);
-      CU = null;
-    });
-  } catch(e) { CU = null; }
-}
-</script>
-</body>
-</html>
+Object.assign(window, {
+  MUSCLES, EXERCISES, TIERS,
+  xpForLevel, levelFromXP, levelProgress, setXP, tierForLevel,
+  loadData, saveData, resetData, clearAll, demoData,
+  exerciseById, totalLevel, totalXP, formatDate,
+});
