@@ -359,6 +359,11 @@ function startApp() {
 
 // ── NAV ────────────────────────────────────────────────────────────────────
 function goTo(screen) {
+  // Stop trash talk interval when leaving
+  if (screen !== 'trash' && typeof trashInterval !== 'undefined' && trashInterval) {
+    clearInterval(trashInterval);
+    trashInterval = null;
+  }
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
@@ -1094,15 +1099,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') sendTrash(); });
 });
 
-// Stop interval when leaving trash screen
-const _origGoTo = goTo;
-function goTo(screen) {
-  if (screen !== 'trash' && trashInterval) {
-    clearInterval(trashInterval);
-    trashInterval = null;
-  }
-  _origGoTo(screen);
-}
+// interval cleanup handled inside goTo
 
 // ── STATS ──────────────────────────────────────────────────────────────────
 function renderStats() {
