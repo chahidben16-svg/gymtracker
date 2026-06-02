@@ -365,37 +365,7 @@ function genFriendCode() {
   return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
 }
 
-async function doLogin() {
-  const name = document.getElementById('login-name').value.trim();
-  if (!name) { alert('Voer je naam in!'); return; }
-
-  const btn = document.querySelector('#screen-login .btn-primary');
-  btn.textContent = 'Even wachten...';
-  btn.disabled = true;
-
-  try {
-    // Check if user exists
-    const existing = await supaFetch('users?name=eq.' + encodeURIComponent(name) + '&limit=1');
-    if (existing && existing.length > 0) {
-      currentUser = existing[0];
-    } else {
-      // Create new user
-      const newUser = { id: 'u_' + Date.now(), name, friend_code: genFriendCode(), created_at: new Date().toISOString() };
-      await supaFetch('users', { method: 'POST', prefer: 'return=representation', body: JSON.stringify(newUser) });
-      currentUser = newUser;
-      // Init XP rows
-      const xpRows = MUSCLES.map(m => ({ user_id: currentUser.id, muscle: m.id, amount: 0 }));
-      await supaFetch('xp', { method: 'POST', body: JSON.stringify(xpRows) });
-    }
-    // Load data from DB
-    await syncFromDB();
-    showApp();
-  } catch(e) {
-    alert('Fout: ' + e.message);
-    btn.textContent = 'Start 💪';
-    btn.disabled = false;
-  }
-}
+// doLogin defined below
 
 async function syncFromDB() {
   // Load XP
@@ -858,29 +828,57 @@ const origDoLogin = doLogin;
 </script>
 <script>
 // Save user after login
-const _origDoLogin = window.doLogin;
 async function doLogin() {
   const name = document.getElementById('login-name').value.trim();
   if (!name) { alert('Voer je naam in!'); return; }
   const btn = document.querySelector('#screen-login .btn-primary');
   btn.textContent = 'Even wachten...'; btn.disabled = true;
+
   try {
+    // Step 1: check if user exists
     const existing = await supaFetch('users?name=eq.' + encodeURIComponent(name) + '&limit=1');
+    
     if (existing && existing.length > 0) {
+      // Returning user
       currentUser = existing[0];
     } else {
-      const newUser = { id: 'u_' + Date.now(), name, friend_code: genFriendCode(), created_at: new Date().toISOString() };
-      await supaFetch('users', { method: 'POST', prefer: 'return=representation', body: JSON.stringify(newUser) });
+      // New user
+      const newUser = {
+        id: 'u_' + Date.now(),
+        name: name,
+        friend_code: genFriendCode()
+      };
+      // Insert user
+      await supaFetch('users', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify(newUser)
+      });
       currentUser = newUser;
-      const xpRows = MUSCLES.map(m => ({ user_id: currentUser.id, muscle: m.id, amount: 0 }));
-      await supaFetch('xp', { method: 'POST', body: JSON.stringify(xpRows) });
+      // Insert XP rows one by one to avoid issues
+      for (const m of MUSCLES) {
+        await supaFetch('xp', {
+          method: 'POST',
+          headers: { 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ user_id: currentUser.id, muscle: m.id, amount: 0 })
+        });
+      }
     }
+
+    // Step 2: load data
     await syncFromDB();
+
+    // Step 3: save session
     localStorage.setItem('gymtracker_user', JSON.stringify(currentUser));
+
+    // Step 4: show app
     showApp();
+
   } catch(e) {
-    alert('Fout: ' + e.message);
-    btn.textContent = 'Start 💪'; btn.disabled = false;
+    console.error(e);
+    alert('Fout bij inloggen: ' + e.message);
+    btn.textContent = 'Start 💪';
+    btn.disabled = false;
   }
 }
 </script>
