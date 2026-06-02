@@ -122,15 +122,17 @@
 
   <!-- LOG -->
   <div id="screen-log" class="screen">
-    <h1 style="margin-bottom:16px;padding-top:8px">Log Workout</h1>
+    <h1 style="margin-bottom:4px;padding-top:8px">Log Workout</h1>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">Voeg alle oefeningen toe en sla dan op</div>
+
     <div class="card"><h3 style="margin-bottom:8px">Spiergroep</h3><select id="log-muscle" onchange="onMuscleChange()"></select></div>
-    <div class="card"><h3 style="margin-bottom:8px">Oefening</h3><select id="log-exercise" onchange="onExerciseChange()"></select></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <h3>Sets</h3>
-      <button class="btn btn-secondary" style="padding:6px 14px;font-size:.8rem" onclick="addSet()">+ Set</button>
-    </div>
-    <div id="sets-list"></div>
-    <div style="height:12px"></div>
+
+    <!-- Exercise blocks -->
+    <div id="exercise-blocks"></div>
+
+    <!-- Add exercise button -->
+    <button class="btn btn-secondary btn-full" style="margin-bottom:16px" onclick="addExerciseBlock()">+ Oefening toevoegen</button>
+
     <button class="btn btn-primary btn-full" style="font-size:1rem;padding:15px" onclick="saveWorkout()">💪 Workout Opslaan</button>
   </div>
 
@@ -347,7 +349,7 @@ function renderHome() {
       <div style="font-size:.75rem;color:${col};font-weight:600">LV ${p.level} <span style="color:var(--muted)">· ${xp.toLocaleString('nl')} XP</span></div>
       <div style="height:8px"></div>
       <div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div>`;
-    c.onclick = () => { goTo('log'); setTimeout(() => { document.getElementById('log-muscle').value = m.id; onMuscleChange(); currentSets = []; addSet(); renderSets(); }, 50); };
+    c.onclick = () => { goTo('log'); setTimeout(() => { document.getElementById('log-muscle').value = m.id; exerciseBlocks = []; onMuscleChange(); }, 50); };
     grid.appendChild(c);
   });
 
@@ -417,62 +419,137 @@ function startToday() {
   const sp = SPLIT[new Date().getDay()] || [];
   if (!sp.length) return;
   goTo('log');
-  setTimeout(() => { document.getElementById('log-muscle').value = sp[0]; onMuscleChange(); currentSets = []; addSet(); renderSets(); }, 50);
+  setTimeout(() => { document.getElementById('log-muscle').value = sp[0]; exerciseBlocks = []; onMuscleChange(); }, 50);
 }
 
 // ── LOG ────────────────────────────────────────────────────────────────────
+// exerciseBlocks: [{exId, sets:[{reps,weight,unit}]}]
+let exerciseBlocks = [];
+
 function renderLog() {
   const sel = document.getElementById('log-muscle');
   if (!sel.options.length) sel.innerHTML = MUSCLES.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
-  renderExercises();
-  if (!currentSets.length) addSet();
-  renderSets();
+  if (!exerciseBlocks.length) addExerciseBlock();
+  else renderAllBlocks();
 }
 
-function onMuscleChange() { currentSets = []; renderExercises(); addSet(); renderSets(); }
-function onExerciseChange() { currentSets = []; addSet(); renderSets(); }
-
-function renderExercises() {
-  const mid = document.getElementById('log-muscle').value || MUSCLES[0].id;
-  document.getElementById('log-exercise').innerHTML = (EXERCISES[mid]||[]).map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+function onMuscleChange() {
+  exerciseBlocks = [];
+  addExerciseBlock();
 }
 
-function addSet() {
+function addExerciseBlock() {
   const mid = document.getElementById('log-muscle')?.value || MUSCLES[0].id;
-  const eid = document.getElementById('log-exercise')?.value;
-  const ex = exerciseById(mid, eid) || (EXERCISES[mid]||[])[0];
-  const last = currentSets[currentSets.length-1];
-  currentSets.push({ reps: last ? last.reps : (ex ? ex.defaultReps : 10), weight: last ? last.weight : (ex ? ex.defaultWeight : 0), unit: ex ? ex.unit : 'kg' });
-  renderSets();
+  const exList = EXERCISES[mid] || [];
+  // Pick first exercise not already added, or first
+  const usedIds = exerciseBlocks.map(b => b.exId);
+  const ex = exList.find(e => !usedIds.includes(e.id)) || exList[0];
+  if (!ex) return;
+  exerciseBlocks.push({ exId: ex.id, sets: [{ reps: ex.defaultReps, weight: ex.defaultWeight, unit: ex.unit }] });
+  renderAllBlocks();
 }
 
-function renderSets() {
-  const list = document.getElementById('sets-list'); if (!list) return;
-  list.innerHTML = '';
-  currentSets.forEach((s, i) => {
-    const isBW = s.unit === 'bw', isSec = s.unit === 'sec';
-    const row = document.createElement('div'); row.className = 'set-row';
-    row.innerHTML = `<div class="set-num">${i+1}</div>
-      <div style="flex:1;display:flex;gap:6px">
-        <div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${s.reps}" onchange="updateSet(${i},'reps',this.value)"><div class="set-label">${isSec?'sec':'reps'}</div></div>
-        ${!isBW?`<div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${s.weight}" onchange="updateSet(${i},'weight',this.value)"><div class="set-label">${s.unit}</div></div>`:''}
-        <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:.75rem;color:var(--accent);font-weight:700">+${setXP(s,s.unit)}xp</span></div>
+function renderAllBlocks() {
+  const container = document.getElementById('exercise-blocks');
+  if (!container) return;
+  const mid = document.getElementById('log-muscle')?.value || MUSCLES[0].id;
+  const exList = EXERCISES[mid] || [];
+  container.innerHTML = '';
+  exerciseBlocks.forEach((block, bi) => {
+    const ex = exList.find(e => e.id === block.exId) || exList[0];
+    const totalXpBlock = block.sets.reduce((t,s) => t + setXP(s, s.unit), 0);
+    const div = document.createElement('div');
+    div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)';
+    // Header
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
+    header.innerHTML = `
+      <div style="flex:1;margin-right:8px">
+        <select style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:8px;outline:none;-webkit-appearance:none" onchange="changeExercise(${bi},this.value)">
+          ${exList.map(e => `<option value="${e.id}" ${e.id===block.exId?'selected':''}>${e.name}</option>`).join('')}
+        </select>
       </div>
-      <button class="set-delete" onclick="removeSet(${i})">✕</button>`;
-    list.appendChild(row);
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:.75rem;color:var(--accent);font-weight:700">+${totalXpBlock}xp</span>
+        ${exerciseBlocks.length > 1 ? `<button onclick="removeBlock(${bi})" style="background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:2px">✕</button>` : ''}
+      </div>`;
+    div.appendChild(header);
+
+    // Sets
+    const setsDiv = document.createElement('div');
+    block.sets.forEach((s, si) => {
+      const isBW = s.unit === 'bw', isSec = s.unit === 'sec';
+      const row = document.createElement('div');
+      row.className = 'set-row';
+      row.innerHTML = `<div class="set-num">${si+1}</div>
+        <div style="flex:1;display:flex;gap:6px">
+          <div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${s.reps}" onchange="updateBlockSet(${bi},${si},'reps',this.value)"><div class="set-label">${isSec?'sec':'reps'}</div></div>
+          ${!isBW?`<div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${s.weight}" onchange="updateBlockSet(${bi},${si},'weight',this.value)"><div class="set-label">${s.unit}</div></div>`:''}
+          <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:.72rem;color:var(--accent);font-weight:700">+${setXP(s,s.unit)}xp</span></div>
+        </div>
+        <button class="set-delete" onclick="removeBlockSet(${bi},${si})">✕</button>`;
+      setsDiv.appendChild(row);
+    });
+    div.appendChild(setsDiv);
+
+    // Add set button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn btn-secondary';
+    addBtn.style.cssText = 'padding:6px 14px;font-size:.8rem;margin-top:6px;width:100%';
+    addBtn.textContent = '+ Set';
+    addBtn.onclick = () => addBlockSet(bi);
+    div.appendChild(addBtn);
+    container.appendChild(div);
   });
 }
 
-function updateSet(i, k, v) { currentSets[i][k] = Number(v); renderSets(); }
-function removeSet(i) { currentSets.splice(i, 1); renderSets(); }
+function changeExercise(bi, exId) {
+  const mid = document.getElementById('log-muscle')?.value || MUSCLES[0].id;
+  const ex = exerciseById(mid, exId);
+  exerciseBlocks[bi].exId = exId;
+  exerciseBlocks[bi].sets = [{ reps: ex ? ex.defaultReps : 10, weight: ex ? ex.defaultWeight : 0, unit: ex ? ex.unit : 'kg' }];
+  renderAllBlocks();
+}
+
+function addBlockSet(bi) {
+  const last = exerciseBlocks[bi].sets[exerciseBlocks[bi].sets.length - 1];
+  exerciseBlocks[bi].sets.push({ ...last });
+  renderAllBlocks();
+}
+
+function removeBlockSet(bi, si) {
+  if (exerciseBlocks[bi].sets.length <= 1) return;
+  exerciseBlocks[bi].sets.splice(si, 1);
+  renderAllBlocks();
+}
+
+function updateBlockSet(bi, si, k, v) {
+  exerciseBlocks[bi].sets[si][k] = Number(v);
+  renderAllBlocks();
+}
+
+function removeBlock(bi) {
+  exerciseBlocks.splice(bi, 1);
+  renderAllBlocks();
+}
+
+// Keep these for backward compat
+function onExerciseChange() {}
+function addSet() {}
+function renderSets() {}
+function updateSet() {}
+function removeSet() {}
 
 async function saveWorkout() {
-  if (!currentSets.length) { alert('Voeg eerst een set toe.'); return; }
+  if (!exerciseBlocks.length) { alert('Voeg eerst een oefening toe.'); return; }
   const mid = document.getElementById('log-muscle').value;
-  const eid = document.getElementById('log-exercise').value;
-  const sets = currentSets.map(s => ({ exercise: eid, reps: s.reps, weight: s.weight, unit: s.unit }));
-  const xpGained = sets.reduce((t, s) => t + setXP(s, s.unit), 0);
-  const workout = { id: 'w' + Date.now(), user_id: CU.id, date: new Date().toISOString(), muscle: mid, sets: sets };
+  const allSets = [];
+  exerciseBlocks.forEach(block => {
+    block.sets.forEach(s => allSets.push({ exercise: block.exId, reps: s.reps, weight: s.weight, unit: s.unit }));
+  });
+  if (!allSets.length) { alert('Voeg eerst sets toe.'); return; }
+  const xpGained = allSets.reduce((t, s) => t + setXP(s, s.unit), 0);
+  const workout = { id: 'w' + Date.now(), user_id: CU.id, date: new Date().toISOString(), muscle: mid, sets: allSets };
   try {
     await db('workouts', 'POST', workout);
     const newXP = (DB_local.xp[mid] || 0) + xpGained;
@@ -480,7 +557,7 @@ async function saveWorkout() {
     DB_local.workouts.unshift(workout);
     DB_local.xp[mid] = newXP;
     showToast('+' + xpGained + ' XP');
-    currentSets = [];
+    exerciseBlocks = [];
     setTimeout(() => goTo('home'), 400);
   } catch(e) { alert('Fout: ' + e.message); }
 }
