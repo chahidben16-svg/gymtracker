@@ -4,144 +4,78 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#f5f5f0" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="GymTracker" />
+  <meta name="apple-mobile-web-app-title" content="Gymmings" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <title>GymTracker</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <title>Gymmings</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:       #f5f5f0;
-      --bg2:      #ffffff;
-      --bg3:      #eeede8;
-      --border:   #e0ddd5;
-      --text:     #111110;
-      --muted:    #888880;
-      --accent:   #c9a84c;
-      --accent2:  #1a1a18;
-      --radius:   14px;
-      --font-display: 'Bebas Neue', sans-serif;
-      --font-body:    'DM Sans', sans-serif;
+      --bg: #f5f5f0; --bg2: #ffffff; --bg3: #eeede8;
+      --border: #e0ddd5; --text: #111110; --muted: #888880;
+      --accent: #c9a84c; --radius: 14px;
+      --font-d: 'Bebas Neue', sans-serif;
+      --font-b: 'DM Sans', sans-serif;
     }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 15px; overflow: hidden; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-b); font-size: 15px; overflow: hidden; }
     #app { display: flex; flex-direction: column; height: 100dvh; }
     .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px 90px; }
     .screen.active { display: block; }
-
-    /* NAV */
     nav { display: flex; justify-content: space-around; align-items: center; background: var(--bg2); border-top: 1px solid var(--border); box-shadow: 0 -2px 12px rgba(0,0,0,.08); padding: 8px 0 max(8px, env(safe-area-inset-bottom)); position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; }
-    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; color: var(--muted); font-family: var(--font-body); font-size: 10px; font-weight: 500; padding: 4px 12px; cursor: pointer; transition: color .15s; -webkit-tap-highlight-color: transparent; }
+    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; color: var(--muted); font-family: var(--font-b); font-size: 10px; font-weight: 500; padding: 4px 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .nav-btn svg { width: 22px; height: 22px; }
     .nav-btn.active { color: var(--accent); }
-
-    /* TYPOGRAPHY */
-    h1 { font-family: var(--font-display); font-size: 2.4rem; letter-spacing: .02em; line-height: 1; }
-    h2 { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: .02em; }
+    h1 { font-family: var(--font-d); font-size: 2.4rem; letter-spacing: .02em; line-height: 1; }
     h3 { font-size: .85rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-
-    /* CARDS */
     .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-    .card-row { display: flex; align-items: center; justify-content: space-between; }
-
-    /* XP BAR */
     .xp-bar-wrap { background: var(--bg3); border-radius: 99px; height: 6px; overflow: hidden; }
-    .xp-bar-fill { height: 100%; border-radius: 99px; transition: width .6s cubic-bezier(.4,0,.2,1); }
-
-    /* MUSCLE GRID */
+    .xp-bar-fill { height: 100%; border-radius: 99px; }
     .muscle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .muscle-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: transform .12s, border-color .12s; -webkit-tap-highlight-color: transparent; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-    .muscle-card:active { transform: scale(.97); }
-    .muscle-card .muscle-name { font-family: var(--font-display); font-size: 1.3rem; margin: 6px 0 4px; }
-    .muscle-card .level-badge { display: inline-flex; align-items: center; gap: 4px; font-size: .75rem; font-weight: 600; color: var(--muted); }
-
-    /* BUTTONS */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 10px; padding: 12px 20px; font-family: var(--font-body); font-size: .9rem; font-weight: 600; cursor: pointer; transition: opacity .12s, transform .1s; -webkit-tap-highlight-color: transparent; }
-    .btn:active { opacity: .8; transform: scale(.98); }
+    .muscle-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.06); -webkit-tap-highlight-color: transparent; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 10px; padding: 12px 20px; font-family: var(--font-b); font-size: .9rem; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .btn-primary { background: var(--accent); color: #111110; }
     .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
     .btn-danger { background: #ff4444; color: #fff; }
     .btn-full { width: 100%; }
-
-    /* SET ROW */
     .set-row { display: flex; align-items: center; gap: 8px; background: var(--bg3); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
-    .set-num { font-family: var(--font-display); font-size: 1.1rem; color: var(--muted); min-width: 24px; }
-    .set-inputs { display: flex; gap: 6px; flex: 1; }
-    .set-input { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: .95rem; font-weight: 500; padding: 8px; text-align: center; outline: none; -webkit-appearance: none; }
+    .set-num { font-family: var(--font-d); font-size: 1.1rem; color: var(--muted); min-width: 24px; }
+    .set-input { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-b); font-size: .95rem; padding: 8px; text-align: center; outline: none; -webkit-appearance: none; }
     .set-input:focus { border-color: var(--accent); }
     .set-label { font-size: .7rem; color: var(--muted); text-align: center; margin-top: 2px; }
-    .set-delete { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 4px; -webkit-tap-highlight-color: transparent; }
-
-    /* SELECT / INPUT */
-    select { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: var(--font-body); font-size: .95rem; padding: 12px; outline: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b80' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
-    input[type=text] { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: var(--font-body); font-size: .95rem; padding: 12px; outline: none; }
+    .set-delete { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 4px; }
+    select, input[type=text] { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: var(--font-b); font-size: .95rem; padding: 12px; outline: none; -webkit-appearance: none; }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b80' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
     input[type=text]:focus { border-color: var(--accent); }
-
-    /* HISTORY */
-    .history-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-    .history-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .history-muscle { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
-    .history-date { font-size: .75rem; color: var(--muted); margin-left: auto; }
-    .history-sets { font-size: .82rem; color: var(--muted); margin-top: 4px; }
-
-    /* STATS */
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stat-box { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-    .stat-val { font-family: var(--font-display); font-size: 2rem; }
-    .stat-lbl { font-size: .75rem; color: var(--muted); margin-top: 2px; }
-
-    /* MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .2s; }
     .modal-overlay.open { opacity: 1; pointer-events: all; }
-    .modal { background: var(--bg2); border-radius: 20px 20px 0 0; border: 1px solid var(--border); border-bottom: none; width: 100%; max-height: 90dvh; overflow-y: auto; padding: 20px 16px max(20px, env(safe-area-inset-bottom)); transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1); }
+    .modal { background: var(--bg2); border-radius: 20px 20px 0 0; border: 1px solid var(--border); width: 100%; max-height: 90dvh; overflow-y: auto; padding: 20px 16px max(20px, env(safe-area-inset-bottom)); transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1); }
     .modal-overlay.open .modal { transform: translateY(0); }
     .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 99px; margin: 0 auto 16px; }
-
-    /* XP TOAST */
-    .xp-toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--accent); color: #111110; font-family: var(--font-display); font-size: 1.3rem; letter-spacing: .04em; padding: 8px 20px; border-radius: 99px; opacity: 0; pointer-events: none; transition: all .3s; z-index: 300; }
+    .xp-toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--accent); color: #111110; font-family: var(--font-d); font-size: 1.3rem; padding: 8px 20px; border-radius: 99px; opacity: 0; pointer-events: none; transition: all .3s; z-index: 300; }
     .xp-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    /* MISC */
-    .spacer { height: 12px; }
     .tag { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
     .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: .9rem; }
     .divider { height: 1px; background: var(--border); margin: 14px 0; }
-
-    /* LOGIN SCREEN */
-    #screen-login { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100dvh; padding: 32px 24px; text-align: center; }
-    .login-logo { font-family: var(--font-display); font-size: 3.5rem; color: var(--accent); letter-spacing: .04em; margin-bottom: 4px; }
-    .login-sub { color: var(--muted); font-size: .9rem; margin-bottom: 40px; }
-
-    /* FRIEND CARD */
-    .friend-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.06); cursor: pointer; }
-    .friend-name { font-family: var(--font-display); font-size: 1.3rem; }
-    .friend-code { font-size: .72rem; color: var(--muted); letter-spacing: .08em; }
-
-    /* LOADING */
-    .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--muted); gap: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
   </style>
 </head>
 <body>
 <div id="app">
 
   <!-- LOGIN -->
-  <div id="screen-login" class="screen active">
-    <div class="login-logo">GYMMINGS</div>
-    <div class="login-sub">Track je workouts. Level op. Compete met vrienden.</div>
+  <div id="screen-login" class="screen active" style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100dvh;padding:32px 24px;text-align:center">
+    <div style="font-family:var(--font-d);font-size:3.5rem;color:var(--accent);letter-spacing:.04em;margin-bottom:4px">GYMMINGS</div>
+    <div style="color:var(--muted);font-size:.9rem;margin-bottom:40px">Track je workouts. Level op. Compete met vrienden.</div>
     <div style="width:100%;max-width:340px">
-      <div style="margin-bottom:12px">
-        <h3 style="margin-bottom:6px">Jouw naam</h3>
-        <input type="text" id="login-name" placeholder="Bijv. Chahid" maxlength="20" />
-      </div>
-      <button class="btn btn-primary btn-full" style="padding:14px;font-size:1rem" onclick="doLogin()">
-        Start 💪
-      </button>
-      <div style="margin-top:16px;text-align:center;font-size:.8rem;color:var(--muted)">Al een account? Voer je naam in zoals je die de vorige keer gebruikte.</div>
+      <h3 style="margin-bottom:8px;text-align:left">Jouw naam</h3>
+      <input type="text" id="login-name" placeholder="Bijv. Chahid" maxlength="20" style="margin-bottom:12px" />
+      <button class="btn btn-primary btn-full" style="padding:14px;font-size:1rem" id="login-btn" onclick="doLogin()">Start 💪</button>
+      <div style="margin-top:16px;font-size:.8rem;color:var(--muted)">Al een account? Voer dezelfde naam in als de vorige keer.</div>
     </div>
   </div>
 
@@ -149,52 +83,39 @@
   <div id="screen-home" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-bottom:18px">
       <div>
-        <div style="font-size:.75rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Welkom terug</div>
+        <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Welkom terug</div>
         <h1 id="home-name" style="font-size:2rem;line-height:1.1">-</h1>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:8px 14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-        <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--accent);line-height:1" id="home-total-level">0</div>
-        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Level</div>
+        <div style="font-family:var(--font-d);font-size:1.8rem;color:var(--accent);line-height:1" id="home-total-level">0</div>
+        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">Level</div>
       </div>
     </div>
-
     <div id="today-split-card" style="margin-bottom:16px"></div>
-
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-        <div style="font-family:var(--font-display);font-size:1.6rem;color:var(--accent);line-height:1" id="home-week-workouts">0</div>
-        <div style="font-size:.65rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.05em">Deze week</div>
+        <div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)" id="home-week">0</div>
+        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">Week</div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-        <div style="font-family:var(--font-display);font-size:1.6rem;color:#ff6b35;line-height:1" id="home-streak">0</div>
-        <div style="font-size:.65rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.05em">Streak 🔥</div>
+        <div style="font-family:var(--font-d);font-size:1.6rem;color:#ff6b35" id="home-streak">0</div>
+        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">Streak 🔥</div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-        <div style="font-family:var(--font-display);font-size:1.6rem;color:var(--text);line-height:1" id="home-total-workouts">0</div>
-        <div style="font-size:.65rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.05em">Totaal</div>
+        <div style="font-family:var(--font-d);font-size:1.6rem;color:var(--text)" id="home-total-w">0</div>
+        <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">Totaal</div>
       </div>
     </div>
-
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px">
         <span style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Activiteit</span>
         <span style="font-size:.75rem;color:var(--muted)">14 dagen</span>
       </div>
       <div id="home-chart" style="display:flex;align-items:flex-end;gap:4px;height:52px"></div>
     </div>
-
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div>
-        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Totale XP</div>
-        <div id="home-total-xp" style="font-family:var(--font-display);font-size:1.6rem;color:var(--accent);line-height:1"></div>
-      </div>
-      <div id="home-tier" style="font-size:.8rem;font-weight:600"></div>
-    </div>
-
     <h3 style="margin-bottom:10px">Spiergroepen</h3>
     <div class="muscle-grid" id="muscle-grid"></div>
-
-    <div class="spacer"></div>
+    <div style="height:12px"></div>
     <h3 style="margin-bottom:10px">Recente workouts</h3>
     <div id="recent-list"></div>
   </div>
@@ -202,20 +123,14 @@
   <!-- LOG -->
   <div id="screen-log" class="screen">
     <h1 style="margin-bottom:16px;padding-top:8px">Log Workout</h1>
-    <div class="card">
-      <h3 style="margin-bottom:8px">Spiergroep</h3>
-      <select id="log-muscle"></select>
-    </div>
-    <div class="card">
-      <h3 style="margin-bottom:8px">Oefening</h3>
-      <select id="log-exercise"></select>
-    </div>
+    <div class="card"><h3 style="margin-bottom:8px">Spiergroep</h3><select id="log-muscle" onchange="onMuscleChange()"></select></div>
+    <div class="card"><h3 style="margin-bottom:8px">Oefening</h3><select id="log-exercise" onchange="onExerciseChange()"></select></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <h3>Sets</h3>
       <button class="btn btn-secondary" style="padding:6px 14px;font-size:.8rem" onclick="addSet()">+ Set</button>
     </div>
     <div id="sets-list"></div>
-    <div class="spacer"></div>
+    <div style="height:12px"></div>
     <button class="btn btn-primary btn-full" style="font-size:1rem;padding:15px" onclick="saveWorkout()">💪 Workout Opslaan</button>
   </div>
 
@@ -229,95 +144,83 @@
   <div id="screen-friends" class="screen">
     <h1 style="margin-bottom:4px;padding-top:8px">Vrienden</h1>
     <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">Bekijk elkaars stats</div>
-
     <div class="card" style="margin-bottom:16px">
-      <h3 style="margin-bottom:6px">Jouw vriendencode</h3>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-        <div id="my-friend-code" style="font-family:var(--font-display);font-size:1.8rem;color:var(--accent);letter-spacing:.1em">----</div>
-        <button class="btn btn-secondary" style="padding:8px 14px;font-size:.8rem" onclick="copyFriendCode()">Kopieer</button>
+      <h3 style="margin-bottom:8px">Jouw vriendencode</h3>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="my-friend-code" style="font-family:var(--font-d);font-size:2rem;color:var(--accent);letter-spacing:.1em">----</div>
+        <button class="btn btn-secondary" style="padding:8px 14px;font-size:.8rem" onclick="copyCode()">Kopieer</button>
       </div>
-      <div style="font-size:.75rem;color:var(--muted);margin-top:6px">Deel deze code met vrienden zodat ze jou kunnen toevoegen</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:6px">Deel deze code met vrienden</div>
     </div>
-
     <div class="card" style="margin-bottom:16px">
       <h3 style="margin-bottom:8px">Vriend toevoegen</h3>
       <div style="display:flex;gap:8px">
-        <input type="text" id="friend-code-input" placeholder="Voer vriendencode in" maxlength="8" style="text-transform:uppercase" />
-        <button class="btn btn-primary" style="white-space:nowrap;padding:10px 16px" onclick="addFriend()">Voeg toe</button>
+        <input type="text" id="friend-input" placeholder="Vriendencode" maxlength="6" />
+        <button class="btn btn-primary" style="white-space:nowrap;padding:10px 16px" onclick="addFriend()">+ Voeg toe</button>
       </div>
     </div>
-
     <h3 style="margin-bottom:10px">Vrienden</h3>
-    <div id="friends-list"><div class="empty">Nog geen vrienden toegevoegd.</div></div>
+    <div id="friends-list"><div class="empty">Nog geen vrienden.</div></div>
   </div>
 
   <!-- STATS -->
   <div id="screen-stats" class="screen">
     <h1 style="margin-bottom:16px;padding-top:8px">Stats</h1>
-    <div class="stat-grid" style="margin-bottom:16px">
-      <div class="stat-box"><div class="stat-val" id="stat-workouts">0</div><div class="stat-lbl">Workouts totaal</div></div>
-      <div class="stat-box"><div class="stat-val" id="stat-sets">0</div><div class="stat-lbl">Sets totaal</div></div>
-      <div class="stat-box"><div class="stat-val" id="stat-xp">0</div><div class="stat-lbl">Totale XP</div></div>
-      <div class="stat-box"><div class="stat-val" id="stat-level">0</div><div class="stat-lbl">Totaal level</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="card"><div style="font-family:var(--font-d);font-size:2rem" id="s-workouts">0</div><div style="font-size:.75rem;color:var(--muted)">Workouts</div></div>
+      <div class="card"><div style="font-family:var(--font-d);font-size:2rem" id="s-sets">0</div><div style="font-size:.75rem;color:var(--muted)">Sets</div></div>
+      <div class="card"><div style="font-family:var(--font-d);font-size:2rem;color:var(--accent)" id="s-xp">0</div><div style="font-size:.75rem;color:var(--muted)">Totale XP</div></div>
+      <div class="card"><div style="font-family:var(--font-d);font-size:2rem" id="s-level">0</div><div style="font-size:.75rem;color:var(--muted)">Totaal Level</div></div>
     </div>
     <h3 style="margin-bottom:10px">Per spiergroep</h3>
     <div id="stats-muscles"></div>
-    <div class="spacer"></div>
     <div class="divider"></div>
     <h3 style="margin-bottom:10px">Instellingen</h3>
     <div class="card">
-      <div style="margin-bottom:12px">
-        <h3 style="margin-bottom:6px">Jouw naam</h3>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="setting-name" placeholder="Naam" />
-          <button class="btn btn-secondary" style="white-space:nowrap" onclick="saveName()">Opslaan</button>
-        </div>
+      <h3 style="margin-bottom:6px">Naam wijzigen</h3>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input type="text" id="setting-name" placeholder="Nieuwe naam" />
+        <button class="btn btn-secondary" style="white-space:nowrap" onclick="saveName()">Opslaan</button>
       </div>
     </div>
   </div>
 
-  <!-- FRIEND DETAIL MODAL -->
-  <div id="screen-friend-detail" class="screen" style="display:none">
+  <!-- FRIEND DETAIL -->
+  <div id="screen-friend-detail" class="screen">
     <div style="display:flex;align-items:center;gap:12px;padding-top:8px;margin-bottom:20px">
       <button class="btn btn-secondary" style="padding:8px 14px" onclick="goTo('friends')">← Terug</button>
-      <h1 id="friend-detail-name" style="font-size:1.8rem"></h1>
+      <h1 id="fd-name" style="font-size:1.8rem"></h1>
     </div>
-    <div id="friend-detail-content"></div>
+    <div id="fd-content"></div>
   </div>
 
-  <!-- BOTTOM NAV -->
+  <!-- NAV -->
   <nav id="main-nav" style="display:none">
     <button class="nav-btn active" onclick="goTo('home')" id="nav-home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Home
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
     </button>
     <button class="nav-btn" onclick="goTo('log')" id="nav-log">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      Log
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Log
     </button>
     <button class="nav-btn" onclick="goTo('history')" id="nav-history">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Historie
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><polyline points="12 6 12 12 16 14"/></svg>Historie
     </button>
     <button class="nav-btn" onclick="goTo('friends')" id="nav-friends">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Vrienden
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Vrienden
     </button>
     <button class="nav-btn" onclick="goTo('stats')" id="nav-stats">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Stats
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Stats
     </button>
   </nav>
 </div>
 
-<div class="xp-toast" id="xp-toast">+0 XP</div>
-
-<div class="modal-overlay" id="workout-modal">
+<div class="xp-toast" id="xp-toast"></div>
+<div class="modal-overlay" id="workout-modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-handle"></div>
     <div id="modal-content"></div>
-    <div class="spacer"></div>
-    <button class="btn btn-danger btn-full" onclick="deleteWorkout()">🗑 Workout verwijderen</button>
+    <div style="height:12px"></div>
+    <button class="btn btn-danger btn-full" onclick="deleteWorkout()">🗑 Verwijderen</button>
     <div style="height:8px"></div>
     <button class="btn btn-secondary btn-full" onclick="closeModal()">Sluiten</button>
   </div>
@@ -325,88 +228,92 @@
 
 <script src="data.js"></script>
 <script>
-// ── SUPABASE CONFIG ────────────────────────────────────────────────────────
 const SUPA_URL = 'https://amthyrpmrhrpkfgchgfz.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGh5cnBtcmhycGtmZ2NoZ2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTA3ODAsImV4cCI6MjA5NTg4Njc4MH0.U2grBGFvAtW_U33NHCITZXz1TAhpAxglQ61TTEe66Hc';
 
-async function supaFetch(path, options = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-  try {
-    console.log('supaFetch:', options.method || 'GET', path);
-    const res = await fetch(SUPA_URL + '/rest/v1/' + path, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'apikey': SUPA_KEY,
-        'Authorization': 'Bearer ' + SUPA_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': (options.headers && options.headers['Prefer']) || 'return=minimal',
-      },
-    });
-    clearTimeout(timeout);
-    console.log('supaFetch response status:', res.status);
-    if (!res.ok && res.status !== 204 && res.status !== 201) {
-      const err = await res.text();
-      console.error('supaFetch error:', err);
-      throw new Error(err);
+// ── SUPABASE ───────────────────────────────────────────────────────────────
+async function db(path, method, body) {
+  const opts = {
+    method: method || 'GET',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
     }
-    const text = await res.text();
-    if (!text || text.trim() === '') return null;
-    try { return JSON.parse(text); } catch(e) { return null; }
-  } catch(e) {
-    clearTimeout(timeout);
-    if (e.name === 'AbortError') throw new Error('Verbinding time-out. Controleer je internet.');
-    throw e;
-  }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(SUPA_URL + '/rest/v1/' + path, opts);
+  const txt = await res.text();
+  if (!res.ok) throw new Error(txt || res.status);
+  if (!txt) return null;
+  try { return JSON.parse(txt); } catch(e) { return null; }
 }
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-let DB = loadData(); // local fallback
-let currentUser = null;
+let CU = null; // current user
+let DB_local = { xp: {}, workouts: [], user: {} };
 let currentSets = [];
 let activeModal = null;
 
-// ── SPLIT ──────────────────────────────────────────────────────────────────
-const SPLIT = { 1:["borst","triceps","schouders"], 2:["rug","biceps"], 3:["benen","core"], 4:[], 5:["borst","rug"], 6:["biceps","triceps","schouders"], 0:["benen","core"] };
-const DAG_NAMEN = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
+const SPLIT = { 1:['borst','triceps','schouders'], 2:['rug','biceps'], 3:['benen','core'], 4:[], 5:['borst','rug'], 6:['biceps','triceps','schouders'], 0:['benen','core'] };
+const DAGEN = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+
+function genCode() {
+  return Array.from({length:6}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+}
 
 // ── LOGIN ──────────────────────────────────────────────────────────────────
-function genFriendCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+async function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  if (!name) { alert('Voer je naam in!'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'Laden...'; btn.disabled = true;
+  try {
+    let rows = await db('users?name=eq.' + encodeURIComponent(name) + '&limit=1');
+    if (rows && rows.length > 0) {
+      CU = rows[0];
+    } else {
+      CU = { id: 'u' + Date.now(), name: name, friend_code: genCode() };
+      await db('users', 'POST', CU);
+      for (const m of MUSCLES) {
+        await db('xp', 'POST', { user_id: CU.id, muscle: m.id, amount: 0 });
+      }
+    }
+    await syncDB();
+    localStorage.setItem('gu', JSON.stringify(CU));
+    startApp();
+  } catch(e) {
+    console.error(e);
+    alert('Fout: ' + e.message);
+    btn.textContent = 'Start 💪'; btn.disabled = false;
+  }
 }
 
-
-
-async function syncFromDB() {
-  // Load XP
-  const xpRows = await supaFetch('xp?user_id=eq.' + currentUser.id);
-  DB.xp = {};
-  MUSCLES.forEach(m => { DB.xp[m.id] = 0; });
-  (xpRows || []).forEach(r => { DB.xp[r.muscle] = r.amount; });
-
-  // Load workouts
-  const workouts = await supaFetch('workouts?user_id=eq.' + currentUser.id + '&order=date.desc&limit=50');
-  DB.workouts = (workouts || []).map(w => ({ ...w, sets: w.sets }));
-  DB.user = { name: currentUser.name };
-  saveData(DB);
+async function syncDB() {
+  const xpRows = await db('xp?user_id=eq.' + CU.id) || [];
+  DB_local.xp = {};
+  MUSCLES.forEach(m => DB_local.xp[m.id] = 0);
+  xpRows.forEach(r => DB_local.xp[r.muscle] = r.amount);
+  const ws = await db('workouts?user_id=eq.' + CU.id + '&order=date.desc&limit=100') || [];
+  DB_local.workouts = ws;
+  DB_local.user = { name: CU.name };
 }
 
-function showApp() {
+function startApp() {
   document.getElementById('screen-login').style.display = 'none';
   document.getElementById('main-nav').style.display = 'flex';
   goTo('home');
 }
 
-// ── NAVIGATION ─────────────────────────────────────────────────────────────
+// ── NAV ────────────────────────────────────────────────────────────────────
 function goTo(screen) {
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
   if (el) { el.classList.add('active'); el.style.display = 'block'; }
-  const navEl = document.getElementById('nav-' + screen);
-  if (navEl) navEl.classList.add('active');
+  const nb = document.getElementById('nav-' + screen);
+  if (nb) nb.classList.add('active');
   if (screen === 'home') renderHome();
   if (screen === 'log') renderLog();
   if (screen === 'history') renderHistory();
@@ -415,455 +322,353 @@ function goTo(screen) {
 }
 
 // ── HOME ───────────────────────────────────────────────────────────────────
+function renderHome() {
+  if (!CU) return;
+  document.getElementById('home-name').textContent = CU.name;
+  const lv = totalLevel(DB_local.xp);
+  document.getElementById('home-total-level').textContent = lv;
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  document.getElementById('home-week').textContent = DB_local.workouts.filter(w => new Date(w.date) >= weekStart).length;
+  document.getElementById('home-streak').textContent = calcStreak();
+  document.getElementById('home-total-w').textContent = DB_local.workouts.length;
+  renderChart();
+  renderTodaySplit();
+
+  const grid = document.getElementById('muscle-grid');
+  grid.innerHTML = '';
+  MUSCLES.forEach(m => {
+    const xp = DB_local.xp[m.id] || 0;
+    const p = levelProgress(xp);
+    const col = `hsl(${m.hue},60%,45%)`;
+    const c = document.createElement('div'); c.className = 'muscle-card';
+    c.innerHTML = `<div style="width:32px;height:4px;background:${col};border-radius:2px"></div>
+      <div style="font-family:var(--font-d);font-size:1.3rem;margin:6px 0 4px">${m.name}</div>
+      <div style="font-size:.75rem;color:${col};font-weight:600">LV ${p.level} <span style="color:var(--muted)">· ${xp.toLocaleString('nl')} XP</span></div>
+      <div style="height:8px"></div>
+      <div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div>`;
+    c.onclick = () => { goTo('log'); setTimeout(() => { document.getElementById('log-muscle').value = m.id; onMuscleChange(); currentSets = []; addSet(); renderSets(); }, 50); };
+    grid.appendChild(c);
+  });
+
+  const list = document.getElementById('recent-list');
+  const recent = [...DB_local.workouts].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,4);
+  list.innerHTML = recent.length ? '' : '<div class="empty">Nog geen workouts.</div>';
+  recent.forEach(w => list.appendChild(makeWorkoutCard(w)));
+}
+
 function calcStreak() {
-  if (!DB.workouts.length) return 0;
-  const days = new Set(DB.workouts.map(w => (w.date||'').slice(0,10)));
+  const days = new Set(DB_local.workouts.map(w => w.date.slice(0,10)));
   let streak = 0;
-  const todayStr = new Date().toISOString().slice(0,10);
-  const yestStr = new Date(Date.now()-86400000).toISOString().slice(0,10);
-  let cur = days.has(todayStr) ? new Date() : (days.has(yestStr) ? new Date(Date.now()-86400000) : null);
-  if (!cur) return 0;
-  while (true) {
-    const s = cur.toISOString().slice(0,10);
-    if (!days.has(s)) break;
-    streak++;
-    cur = new Date(cur.getTime()-86400000);
-  }
+  let cur = new Date();
+  const ts = cur.toISOString().slice(0,10);
+  const ys = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if (!days.has(ts) && !days.has(ys)) return 0;
+  if (!days.has(ts)) cur = new Date(Date.now()-86400000);
+  while (days.has(cur.toISOString().slice(0,10))) { streak++; cur = new Date(cur.getTime()-86400000); }
   return streak;
 }
 
-function renderHomeChart() {
-  const el = document.getElementById('home-chart');
-  if (!el) return;
-  const days = 14;
-  const counts = [];
-  for (let i = days-1; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate()-i);
-    const s = d.toISOString().slice(0,10);
-    counts.push(DB.workouts.filter(w => (w.date||'').slice(0,10) === s).length);
-  }
+function renderChart() {
+  const el = document.getElementById('home-chart'); if (!el) return;
+  const n = 14;
+  const counts = Array.from({length:n}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate()-(n-1-i));
+    return DB_local.workouts.filter(w => w.date.slice(0,10) === d.toISOString().slice(0,10)).length;
+  });
   const max = Math.max(...counts, 1);
-  el.innerHTML = counts.map((c, i) => {
-    const h = Math.max(c/max*100, c>0?15:4);
-    const isToday = i === days-1;
-    const color = c>0 ? (isToday?'var(--accent)':'#a07830') : 'var(--bg3)';
-    const d = new Date(); d.setDate(d.getDate()-(days-1-i));
-    const label = d.toLocaleDateString('nl-NL',{weekday:'narrow'});
+  el.innerHTML = counts.map((c,i) => {
+    const h = c > 0 ? Math.max(c/max*100, 15) : 4;
+    const today = i === n-1;
+    const col = c > 0 ? (today ? 'var(--accent)' : '#a07830') : 'var(--bg3)';
+    const d = new Date(); d.setDate(d.getDate()-(n-1-i));
+    const lbl = d.toLocaleDateString('nl-NL',{weekday:'narrow'});
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-      <div style="width:100%;background:${color};border-radius:3px 3px 0 0;height:${h}%;min-height:${c>0?6:3}px"></div>
-      <div style="font-size:.55rem;color:${isToday?'var(--accent)':'var(--muted)'};font-weight:${isToday?700:400}">${label}</div>
+      <div style="width:100%;background:${col};border-radius:3px 3px 0 0;height:${h}%;min-height:${c>0?6:3}px"></div>
+      <div style="font-size:.55rem;color:${today?'var(--accent)':'var(--muted)'};font-weight:${today?700:400}">${lbl}</div>
     </div>`;
   }).join('');
 }
 
 function renderTodaySplit() {
   const dag = new Date().getDay();
-  const spieren = SPLIT[dag] || [];
-  const card = document.getElementById('today-split-card');
-  if (!card) return;
-  if (spieren.length === 0) {
-    card.innerHTML = `<div class="card"><h3 style="margin-bottom:6px">Vandaag · ${DAG_NAMEN[dag]}</h3><div style="font-family:var(--font-display);font-size:1.6rem;color:var(--muted)">Rustdag 🛋</div></div>`;
+  const sp = SPLIT[dag] || [];
+  const el = document.getElementById('today-split-card'); if (!el) return;
+  if (!sp.length) {
+    el.innerHTML = `<div class="card"><h3 style="margin-bottom:6px">Vandaag · ${DAGEN[dag]}</h3><div style="font-family:var(--font-d);font-size:1.6rem;color:var(--muted)">Rustdag 🛋</div></div>`;
     return;
   }
-  const chips = spieren.map(id => {
-    const m = MUSCLES.find(x => x.id===id); if (!m) return '';
-    const color = `hsl(${m.hue},60%,45%)`;
-    return `<span style="background:${color}18;border:1px solid ${color}44;border-radius:99px;padding:4px 12px;font-size:.82rem;font-weight:600;color:${color}">${m.name}</span>`;
+  const chips = sp.map(id => {
+    const m = MUSCLES.find(x=>x.id===id); if (!m) return '';
+    const col = `hsl(${m.hue},60%,45%)`;
+    return `<span style="background:${col}18;border:1px solid ${col}44;border-radius:99px;padding:4px 12px;font-size:.82rem;font-weight:600;color:${col}">${m.name}</span>`;
   }).join('');
-  card.innerHTML = `<div class="card" style="border-color:var(--accent)44">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <h3>Vandaag · ${DAG_NAMEN[dag]}</h3>
+  el.innerHTML = `<div class="card" style="border-color:var(--accent)44">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3>Vandaag · ${DAGEN[dag]}</h3>
       <span style="font-size:.7rem;color:var(--accent);font-weight:700">JOUW SPLIT</span>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${chips}</div>
-    <button class="btn btn-primary btn-full" style="padding:11px" onclick="startTodayWorkout()">💪 Start training</button>
+    <button class="btn btn-primary btn-full" style="padding:11px" onclick="startToday()">💪 Start training</button>
   </div>`;
 }
 
-function startTodayWorkout() {
-  const dag = new Date().getDay();
-  const spieren = SPLIT[dag]||[];
-  if (!spieren.length) return;
+function startToday() {
+  const sp = SPLIT[new Date().getDay()] || [];
+  if (!sp.length) return;
   goTo('log');
-  document.getElementById('log-muscle').value = spieren[0];
-  renderExerciseSelect(); currentSets = []; addSet(); renderSets();
-}
-
-function renderHome() {
-  if (!currentUser) return;
-  document.getElementById('home-name').textContent = currentUser.name;
-  renderTodaySplit();
-  const lv = totalLevel(DB.xp);
-  document.getElementById('home-total-level').textContent = lv;
-  document.getElementById('home-total-xp').textContent = totalXP(DB.xp).toLocaleString('nl') + ' XP';
-  const tier = tierForLevel(Math.round(lv/MUSCLES.length));
-  document.getElementById('home-tier').innerHTML = `<span class="tag" style="background:${tier.color}20;color:${tier.color}">${tier.name}</span>`;
-  const now = new Date();
-  const weekStart = new Date(now); weekStart.setDate(now.getDate()-now.getDay());
-  document.getElementById('home-week-workouts').textContent = DB.workouts.filter(w => new Date(w.date)>=weekStart).length;
-  document.getElementById('home-streak').textContent = calcStreak();
-  document.getElementById('home-total-workouts').textContent = DB.workouts.length;
-  renderHomeChart();
-
-  const grid = document.getElementById('muscle-grid');
-  grid.innerHTML = '';
-  MUSCLES.forEach(m => {
-    const xp = DB.xp[m.id]||0;
-    const prog = levelProgress(xp);
-    const color = `hsl(${m.hue},60%,45%)`;
-    const card = document.createElement('div');
-    card.className = 'muscle-card';
-    card.innerHTML = `<div style="width:32px;height:4px;background:${color};border-radius:2px"></div>
-      <div class="muscle-name">${m.name}</div>
-      <div class="level-badge"><span style="color:${color}">LV ${prog.level}</span><span>· ${xp.toLocaleString('nl')} XP</span></div>
-      <div style="height:8px"></div>
-      <div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(prog.into*100).toFixed(1)}%;background:${color}"></div></div>`;
-    card.onclick = () => goToMuscleLog(m.id);
-    grid.appendChild(card);
-  });
-
-  const list = document.getElementById('recent-list');
-  const recent = [...DB.workouts].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,4);
-  list.innerHTML = recent.length ? '' : '<div class="empty">Nog geen workouts gelogd.</div>';
-  recent.forEach(w => list.appendChild(workoutCard(w)));
+  setTimeout(() => { document.getElementById('log-muscle').value = sp[0]; onMuscleChange(); currentSets = []; addSet(); renderSets(); }, 50);
 }
 
 // ── LOG ────────────────────────────────────────────────────────────────────
 function renderLog() {
   const sel = document.getElementById('log-muscle');
-  const cur = sel.value;
-  sel.innerHTML = MUSCLES.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
-  if (cur) sel.value = cur;
-  renderExerciseSelect();
-  if (currentSets.length===0) addSet();
+  if (!sel.options.length) sel.innerHTML = MUSCLES.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  renderExercises();
+  if (!currentSets.length) addSet();
   renderSets();
 }
 
-function renderExerciseSelect() {
-  const muscleId = document.getElementById('log-muscle').value||MUSCLES[0].id;
-  const exSel = document.getElementById('log-exercise');
-  const cur = exSel.value;
-  exSel.innerHTML = (EXERCISES[muscleId]||[]).map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
-  if (cur) exSel.value = cur;
-}
+function onMuscleChange() { currentSets = []; renderExercises(); addSet(); renderSets(); }
+function onExerciseChange() { currentSets = []; addSet(); renderSets(); }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('log-muscle').addEventListener('change', () => { currentSets=[]; renderExerciseSelect(); addSet(); renderSets(); });
-  document.getElementById('log-exercise').addEventListener('change', () => { currentSets=[]; addSet(); renderSets(); });
-  // uppercase friend code input
-  const fci = document.getElementById('friend-code-input');
-  if (fci) fci.addEventListener('input', () => { fci.value = fci.value.toUpperCase(); });
-});
-
-function goToMuscleLog(muscleId) {
-  goTo('log');
-  document.getElementById('log-muscle').value = muscleId;
-  renderExerciseSelect(); currentSets=[]; addSet(); renderSets();
+function renderExercises() {
+  const mid = document.getElementById('log-muscle').value || MUSCLES[0].id;
+  document.getElementById('log-exercise').innerHTML = (EXERCISES[mid]||[]).map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
 }
 
 function addSet() {
-  const muscleId = document.getElementById('log-muscle')?.value||MUSCLES[0].id;
-  const exId = document.getElementById('log-exercise')?.value;
-  const ex = exerciseById(muscleId,exId)||(EXERCISES[muscleId]||[])[0];
+  const mid = document.getElementById('log-muscle')?.value || MUSCLES[0].id;
+  const eid = document.getElementById('log-exercise')?.value;
+  const ex = exerciseById(mid, eid) || (EXERCISES[mid]||[])[0];
   const last = currentSets[currentSets.length-1];
-  currentSets.push({ reps: last?last.reps:(ex?ex.defaultReps:10), weight: last?last.weight:(ex?ex.defaultWeight:0), unit: ex?ex.unit:'kg' });
+  currentSets.push({ reps: last ? last.reps : (ex ? ex.defaultReps : 10), weight: last ? last.weight : (ex ? ex.defaultWeight : 0), unit: ex ? ex.unit : 'kg' });
   renderSets();
 }
 
 function renderSets() {
   const list = document.getElementById('sets-list'); if (!list) return;
   list.innerHTML = '';
-  currentSets.forEach((set,i) => {
-    const row = document.createElement('div'); row.className='set-row';
-    const isBW = set.unit==='bw', isTime = set.unit==='sec';
-    row.innerHTML=`<div class="set-num">${i+1}</div>
-      <div class="set-inputs" style="flex-direction:column;gap:2px">
-        <div style="display:flex;gap:6px">
-          <div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${set.reps}" onchange="updateSet(${i},'reps',this.value)"/><div class="set-label">${isTime?'sec':'reps'}</div></div>
-          ${!isBW?`<div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${set.weight}" onchange="updateSet(${i},'weight',this.value)"/><div class="set-label">${set.unit}</div></div>`:''}
-          <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:.75rem;color:var(--accent);font-weight:700">+${setXP(set,set.unit)} XP</span></div>
-        </div>
+  currentSets.forEach((s, i) => {
+    const isBW = s.unit === 'bw', isSec = s.unit === 'sec';
+    const row = document.createElement('div'); row.className = 'set-row';
+    row.innerHTML = `<div class="set-num">${i+1}</div>
+      <div style="flex:1;display:flex;gap:6px">
+        <div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${s.reps}" onchange="updateSet(${i},'reps',this.value)"><div class="set-label">${isSec?'sec':'reps'}</div></div>
+        ${!isBW?`<div style="flex:1"><input class="set-input" type="number" inputmode="decimal" value="${s.weight}" onchange="updateSet(${i},'weight',this.value)"><div class="set-label">${s.unit}</div></div>`:''}
+        <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:.75rem;color:var(--accent);font-weight:700">+${setXP(s,s.unit)}xp</span></div>
       </div>
       <button class="set-delete" onclick="removeSet(${i})">✕</button>`;
     list.appendChild(row);
   });
 }
 
-function updateSet(i,key,val) { currentSets[i][key]=Number(val); renderSets(); }
-function removeSet(i) { currentSets.splice(i,1); renderSets(); }
+function updateSet(i, k, v) { currentSets[i][k] = Number(v); renderSets(); }
+function removeSet(i) { currentSets.splice(i, 1); renderSets(); }
 
 async function saveWorkout() {
   if (!currentSets.length) { alert('Voeg eerst een set toe.'); return; }
-  const muscleId = document.getElementById('log-muscle').value;
-  const exId = document.getElementById('log-exercise').value;
-  const sets = currentSets.map(s=>({exercise:exId,reps:s.reps,weight:s.weight,unit:s.unit}));
-  const gainedXP = sets.reduce((sum,s)=>sum+setXP(s,s.unit),0);
-
-  const workout = { id:'w'+Date.now(), user_id:currentUser.id, date:new Date().toISOString(), muscle:muscleId, sets };
-
+  const mid = document.getElementById('log-muscle').value;
+  const eid = document.getElementById('log-exercise').value;
+  const sets = currentSets.map(s => ({ exercise: eid, reps: s.reps, weight: s.weight, unit: s.unit }));
+  const xpGained = sets.reduce((t, s) => t + setXP(s, s.unit), 0);
+  const workout = { id: 'w' + Date.now(), user_id: CU.id, date: new Date().toISOString(), muscle: mid, sets: sets };
   try {
-    await supaFetch('workouts', {method:'POST', body:JSON.stringify(workout)});
-    const newXP = (DB.xp[muscleId]||0)+gainedXP;
-    await supaFetch('xp?user_id=eq.'+currentUser.id+'&muscle=eq.'+muscleId, {
-      method:'PATCH', body:JSON.stringify({amount:newXP})
-    });
-    DB.workouts.push(workout);
-    DB.xp[muscleId] = newXP;
-    saveData(DB);
-    showXPToast(gainedXP);
-    currentSets=[];
-    setTimeout(()=>goTo('home'),400);
-  } catch(e) {
-    alert('Opslaan mislukt: '+e.message);
-  }
+    await db('workouts', 'POST', workout);
+    const newXP = (DB_local.xp[mid] || 0) + xpGained;
+    await db('xp?user_id=eq.' + CU.id + '&muscle=eq.' + mid, 'PATCH', { amount: newXP });
+    DB_local.workouts.unshift(workout);
+    DB_local.xp[mid] = newXP;
+    showToast('+' + xpGained + ' XP');
+    currentSets = [];
+    setTimeout(() => goTo('home'), 400);
+  } catch(e) { alert('Fout: ' + e.message); }
 }
 
 // ── HISTORY ────────────────────────────────────────────────────────────────
 function renderHistory() {
   const list = document.getElementById('history-list');
-  const sorted = [...DB.workouts].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  list.innerHTML = sorted.length?'':'<div class="empty">Nog geen workouts gelogd.</div>';
-  sorted.forEach(w=>list.appendChild(workoutCard(w)));
+  const sorted = [...DB_local.workouts].sort((a,b) => new Date(b.date)-new Date(a.date));
+  list.innerHTML = sorted.length ? '' : '<div class="empty">Nog geen workouts.</div>';
+  sorted.forEach(w => list.appendChild(makeWorkoutCard(w)));
 }
 
-function workoutCard(w) {
-  const m = MUSCLES.find(x=>x.id===w.muscle)||{name:w.muscle,hue:200};
-  const color = `hsl(${m.hue},60%,45%)`;
-  const totalXpW = w.sets.reduce((sum,s)=>sum+setXP(s,s.unit),0);
-  const setsSummary = w.sets.slice(0,3).map(s=>{
-    const ex=exerciseById(w.muscle,s.exercise); const name=ex?ex.name:s.exercise;
-    if(s.unit==='bw') return `${name} ${s.reps}r`;
-    if(s.unit==='sec') return `${name} ${s.reps}s`;
-    return `${name} ${s.reps}×${s.weight}${s.unit}`;
-  }).join(' · ')+(w.sets.length>3?` +${w.sets.length-3}`:'');
-  const card=document.createElement('div'); card.className='card'; card.style.cursor='pointer';
-  card.innerHTML=`<div class="history-header">
-    <div class="history-dot" style="background:${color}"></div>
-    <span class="history-muscle" style="color:${color}">${m.name}</span>
-    <span style="font-size:.75rem;color:var(--accent)">+${totalXpW} XP</span>
-    <span class="history-date">${formatDate(w.date)}</span>
-  </div><div class="history-sets">${setsSummary||'—'}</div>`;
-  card.onclick=()=>openWorkoutModal(w.id);
+function makeWorkoutCard(w) {
+  const m = MUSCLES.find(x=>x.id===w.muscle) || {name:w.muscle,hue:200};
+  const col = `hsl(${m.hue},60%,45%)`;
+  const xpW = w.sets.reduce((t,s) => t+setXP(s,s.unit), 0);
+  const summary = w.sets.slice(0,3).map(s => {
+    const ex = exerciseById(w.muscle, s.exercise); const n = ex ? ex.name : s.exercise;
+    return s.unit==='bw' ? `${n} ${s.reps}r` : s.unit==='sec' ? `${n} ${s.reps}s` : `${n} ${s.reps}×${s.weight}`;
+  }).join(' · ') + (w.sets.length>3 ? ` +${w.sets.length-3}` : '');
+  const card = document.createElement('div'); card.className = 'card'; card.style.cursor = 'pointer';
+  card.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+    <div style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0"></div>
+    <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:${col}">${m.name}</span>
+    <span style="font-size:.75rem;color:var(--accent)">+${xpW} XP</span>
+    <span style="font-size:.75rem;color:var(--muted);margin-left:auto">${formatDate(w.date)}</span>
+  </div>
+  <div style="font-size:.82rem;color:var(--muted)">${summary || '—'}</div>`;
+  card.onclick = () => openModal(w.id);
   return card;
 }
 
-// ── WORKOUT MODAL ──────────────────────────────────────────────────────────
-function openWorkoutModal(id) {
-  activeModal=id;
-  const w=DB.workouts.find(x=>x.id===id); if(!w) return;
-  const m=MUSCLES.find(x=>x.id===w.muscle)||{name:w.muscle,hue:200};
-  const color=`hsl(${m.hue},60%,45%)`;
-  let html=`<h2 style="color:${color};margin-bottom:4px">${m.name}</h2>
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function openModal(id) {
+  activeModal = id;
+  const w = DB_local.workouts.find(x=>x.id===id); if (!w) return;
+  const m = MUSCLES.find(x=>x.id===w.muscle) || {name:w.muscle,hue:200};
+  const col = `hsl(${m.hue},60%,45%)`;
+  let html = `<h2 style="color:${col};margin-bottom:4px">${m.name}</h2>
     <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">${new Date(w.date).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})}</div>`;
-  w.sets.forEach((s,i)=>{
-    const ex=exerciseById(w.muscle,s.exercise); const name=ex?ex.name:s.exercise;
-    const val=s.unit==='bw'?`${s.reps} reps`:s.unit==='sec'?`${s.reps} sec`:`${s.reps} × ${s.weight} ${s.unit}`;
-    html+=`<div class="set-row"><div class="set-num">${i+1}</div><div style="flex:1"><strong>${name}</strong><br><span style="font-size:.82rem;color:var(--muted)">${val}</span></div><span style="font-size:.75rem;color:var(--accent)">+${setXP(s,s.unit)} XP</span></div>`;
+  w.sets.forEach((s,i) => {
+    const ex = exerciseById(w.muscle, s.exercise); const n = ex ? ex.name : s.exercise;
+    const val = s.unit==='bw' ? `${s.reps} reps` : s.unit==='sec' ? `${s.reps} sec` : `${s.reps} × ${s.weight} ${s.unit}`;
+    html += `<div class="set-row"><div class="set-num">${i+1}</div><div style="flex:1"><strong>${n}</strong><br><span style="font-size:.82rem;color:var(--muted)">${val}</span></div><span style="font-size:.75rem;color:var(--accent)">+${setXP(s,s.unit)}xp</span></div>`;
   });
-  document.getElementById('modal-content').innerHTML=html;
+  document.getElementById('modal-content').innerHTML = html;
   document.getElementById('workout-modal').classList.add('open');
 }
-function closeModal() { document.getElementById('workout-modal').classList.remove('open'); activeModal=null; }
+
+function closeModal() { document.getElementById('workout-modal').classList.remove('open'); activeModal = null; }
 
 async function deleteWorkout() {
   if (!activeModal) return;
-  const w=DB.workouts.find(x=>x.id===activeModal); if(!w) return;
-  const xpLost=w.sets.reduce((sum,s)=>sum+setXP(s,s.unit),0);
+  const w = DB_local.workouts.find(x=>x.id===activeModal); if (!w) return;
+  const lost = w.sets.reduce((t,s)=>t+setXP(s,s.unit),0);
   try {
-    await supaFetch('workouts?id=eq.'+activeModal, {method:'DELETE'});
-    const newXP=Math.max(0,(DB.xp[w.muscle]||0)-xpLost);
-    await supaFetch('xp?user_id=eq.'+currentUser.id+'&muscle=eq.'+w.muscle, {method:'PATCH',body:JSON.stringify({amount:newXP})});
-    DB.xp[w.muscle]=newXP;
-    DB.workouts=DB.workouts.filter(x=>x.id!==activeModal);
-    saveData(DB); closeModal(); renderHistory(); renderHome();
-  } catch(e) { alert('Verwijderen mislukt: '+e.message); }
+    await db('workouts?id=eq.' + activeModal, 'DELETE');
+    const newXP = Math.max(0, (DB_local.xp[w.muscle]||0) - lost);
+    await db('xp?user_id=eq.' + CU.id + '&muscle=eq.' + w.muscle, 'PATCH', { amount: newXP });
+    DB_local.xp[w.muscle] = newXP;
+    DB_local.workouts = DB_local.workouts.filter(x=>x.id!==activeModal);
+    closeModal(); renderHistory();
+  } catch(e) { alert('Fout: ' + e.message); }
 }
-
-document.getElementById('workout-modal').addEventListener('click',(e)=>{ if(e.target===e.currentTarget) closeModal(); });
 
 // ── FRIENDS ────────────────────────────────────────────────────────────────
 async function renderFriends() {
-  if (!currentUser) return;
-  document.getElementById('my-friend-code').textContent = currentUser.friend_code;
-
+  if (!CU) return;
+  document.getElementById('my-friend-code').textContent = CU.friend_code;
   const list = document.getElementById('friends-list');
-  list.innerHTML = '<div class="loading"><div class="spinner"></div> Laden...</div>';
-
+  list.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted)"><div class="spinner"></div> Laden...</div>';
   try {
-    const friendLinks = await supaFetch('friends?user_id=eq.'+currentUser.id);
-    if (!friendLinks || friendLinks.length===0) {
-      list.innerHTML='<div class="empty">Nog geen vrienden toegevoegd.<br>Deel jouw code om te beginnen!</div>';
-      return;
-    }
-    const friendIds = friendLinks.map(f=>f.friend_id);
-    const friends = await supaFetch('users?id=in.('+friendIds.join(',')+')');
-    list.innerHTML='';
-    for (const f of (friends||[])) {
-      const fXP = await supaFetch('xp?user_id=eq.'+f.id);
-      const xpMap = {}; MUSCLES.forEach(m=>{xpMap[m.id]=0;});
-      (fXP||[]).forEach(r=>{xpMap[r.muscle]=r.amount;});
-      const lv = totalLevel(xpMap);
-      const card = document.createElement('div'); card.className='friend-card';
-      card.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between">
-        <div><div class="friend-name">${f.name}</div><div class="friend-code">Code: ${f.friend_code}</div></div>
-        <div style="text-align:right"><div style="font-family:var(--font-display);font-size:1.6rem;color:var(--accent)">${lv}</div><div style="font-size:.65rem;color:var(--muted)">LEVEL</div></div>
+    const links = await db('friends?user_id=eq.' + CU.id) || [];
+    if (!links.length) { list.innerHTML = '<div class="empty">Nog geen vrienden.<br>Deel jouw code om te beginnen!</div>'; return; }
+    list.innerHTML = '';
+    for (const link of links) {
+      const fu = await db('users?id=eq.' + link.friend_id + '&limit=1');
+      if (!fu || !fu[0]) continue;
+      const f = fu[0];
+      const fxp = await db('xp?user_id=eq.' + f.id) || [];
+      const xmap = {}; MUSCLES.forEach(m => xmap[m.id] = 0);
+      fxp.forEach(r => xmap[r.muscle] = r.amount);
+      const lv = totalLevel(xmap);
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer';
+      card.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div style="font-family:var(--font-d);font-size:1.3rem">${f.name}</div><div style="font-size:.72rem;color:var(--muted)">Code: ${f.friend_code}</div></div>
+        <div style="text-align:right"><div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${lv}</div><div style="font-size:.65rem;color:var(--muted)">LEVEL</div></div>
       </div>`;
-      card.onclick=()=>openFriendDetail(f, xpMap);
+      card.onclick = () => openFriendDetail(f, xmap);
       list.appendChild(card);
     }
-  } catch(e) {
-    list.innerHTML='<div class="empty">Kon vrienden niet laden.</div>';
-  }
+  } catch(e) { list.innerHTML = '<div class="empty">Kon vrienden niet laden.</div>'; console.error(e); }
 }
 
 async function addFriend() {
-  const code = document.getElementById('friend-code-input').value.trim().toUpperCase();
-  if (code.length<4) { alert('Voer een geldige vriendencode in!'); return; }
-  if (code===currentUser.friend_code) { alert('Dat is jouw eigen code!'); return; }
+  const code = document.getElementById('friend-input').value.trim().toUpperCase();
+  if (code.length < 4) { alert('Voer een geldige code in!'); return; }
+  if (code === CU.friend_code) { alert('Dat is jouw eigen code!'); return; }
   try {
-    const found = await supaFetch('users?friend_code=eq.'+code+'&limit=1');
-    if (!found||found.length===0) { alert('Geen gebruiker gevonden met deze code.'); return; }
-    const friend = found[0];
-    // Check if already friends
-    const existing = await supaFetch('friends?user_id=eq.'+currentUser.id+'&friend_id=eq.'+friend.id);
-    if (existing&&existing.length>0) { alert(friend.name+' is al jouw vriend!'); return; }
-    await supaFetch('friends', {method:'POST', body:JSON.stringify({user_id:currentUser.id,friend_id:friend.id})});
-    document.getElementById('friend-code-input').value='';
-    alert(friend.name+' toegevoegd als vriend! 🎉');
+    const found = await db('users?friend_code=eq.' + code + '&limit=1');
+    if (!found || !found[0]) { alert('Geen gebruiker gevonden met deze code.'); return; }
+    const f = found[0];
+    const existing = await db('friends?user_id=eq.' + CU.id + '&friend_id=eq.' + f.id);
+    if (existing && existing.length) { alert(f.name + ' is al jouw vriend!'); return; }
+    await db('friends', 'POST', { user_id: CU.id, friend_id: f.id });
+    document.getElementById('friend-input').value = '';
+    alert(f.name + ' toegevoegd! 🎉');
     renderFriends();
-  } catch(e) {
-    alert('Fout: '+e.message);
-  }
+  } catch(e) { alert('Fout: ' + e.message); }
 }
 
-function copyFriendCode() {
-  navigator.clipboard.writeText(currentUser.friend_code).then(()=>alert('Code gekopieerd: '+currentUser.friend_code));
+function copyCode() {
+  navigator.clipboard.writeText(CU.friend_code).then(() => alert('Code gekopieerd: ' + CU.friend_code)).catch(() => alert('Jouw code: ' + CU.friend_code));
 }
 
-async function openFriendDetail(friend, xpMap) {
-  document.getElementById('friend-detail-name').textContent = friend.name;
-  const content = document.getElementById('friend-detail-content');
-  content.innerHTML = '<div class="loading"><div class="spinner"></div> Laden...</div>';
-
-  // Show friend detail screen
-  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+function openFriendDetail(f, xmap) {
+  document.getElementById('fd-name').textContent = f.name;
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-friend-detail');
-  el.classList.add('active'); el.style.display='block';
-
-  const lv = totalLevel(xpMap);
-  const tier = tierForLevel(Math.round(lv/MUSCLES.length));
-
-  let html = `<div style="display:flex;gap:10px;margin-bottom:16px">
-    <div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div style="font-family:var(--font-display);font-size:2rem;color:var(--accent)">${lv}</div>
-      <div style="font-size:.7rem;color:var(--muted)">Totaal Level</div>
-    </div>
-    <div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div style="font-size:1rem;font-weight:700;color:${tier.color}">${tier.name}</div>
-      <div style="font-size:.7rem;color:var(--muted)">Tier</div>
-    </div>
-    <div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div style="font-family:var(--font-display);font-size:1.4rem;color:var(--text)">${totalXP(xpMap).toLocaleString('nl')}</div>
-      <div style="font-size:.7rem;color:var(--muted)">Totale XP</div>
-    </div>
-  </div>
-  <h3 style="margin-bottom:10px">Per spiergroep</h3>`;
-
-  MUSCLES.forEach(m=>{
-    const xp=xpMap[m.id]||0;
-    const prog=levelProgress(xp);
-    const color=`hsl(${m.hue},60%,45%)`;
-    html+=`<div class="card">
-      <div class="card-row" style="margin-bottom:8px">
-        <span style="font-family:var(--font-display);font-size:1.1rem;color:${color}">${m.name}</span>
-        <span style="font-size:.8rem;color:var(--muted)">LV <strong style="color:var(--text)">${prog.level}</strong> · ${xp.toLocaleString('nl')} XP</span>
-      </div>
-      <div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(prog.into*100).toFixed(1)}%;background:${color}"></div></div>
-    </div>`;
+  el.classList.add('active'); el.style.display = 'block';
+  const lv = totalLevel(xmap);
+  const tier = tierForLevel(Math.round(lv / MUSCLES.length));
+  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    <div class="card"><div style="font-family:var(--font-d);font-size:2rem;color:var(--accent)">${lv}</div><div style="font-size:.75rem;color:var(--muted)">Totaal Level</div></div>
+    <div class="card"><div style="font-family:var(--font-d);font-size:1.4rem;color:${tier.color}">${tier.name}</div><div style="font-size:.75rem;color:var(--muted)">Rang</div></div>
+  </div><h3 style="margin-bottom:10px">Per spiergroep</h3>`;
+  MUSCLES.forEach(m => {
+    const xp = xmap[m.id]||0; const p = levelProgress(xp); const col = `hsl(${m.hue},60%,45%)`;
+    html += `<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <span style="font-family:var(--font-d);font-size:1.1rem;color:${col}">${m.name}</span>
+      <span style="font-size:.8rem;color:var(--muted)">LV ${p.level} · ${xp.toLocaleString('nl')} XP</span>
+    </div><div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div></div>`;
   });
-
-  content.innerHTML = html;
+  document.getElementById('fd-content').innerHTML = html;
 }
 
 // ── STATS ──────────────────────────────────────────────────────────────────
 function renderStats() {
-  document.getElementById('stat-workouts').textContent=DB.workouts.length;
-  document.getElementById('stat-sets').textContent=DB.workouts.reduce((s,w)=>s+w.sets.length,0);
-  document.getElementById('stat-xp').textContent=totalXP(DB.xp).toLocaleString('nl');
-  document.getElementById('stat-level').textContent=totalLevel(DB.xp);
-  const cont=document.getElementById('stats-muscles'); cont.innerHTML='';
-  MUSCLES.forEach(m=>{
-    const xp=DB.xp[m.id]||0; const prog=levelProgress(xp); const color=`hsl(${m.hue},60%,45%)`;
-    const div=document.createElement('div'); div.className='card';
-    div.innerHTML=`<div class="card-row" style="margin-bottom:8px">
-      <span style="font-family:var(--font-display);font-size:1.1rem;color:${color}">${m.name}</span>
-      <span style="font-size:.8rem;color:var(--muted)">LV <strong style="color:var(--text)">${prog.level}</strong> · ${xp.toLocaleString('nl')} XP</span>
-    </div>
-    <div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(prog.into*100).toFixed(1)}%;background:${color}"></div></div>
-    <div style="display:flex;justify-content:flex-end;font-size:.7rem;color:var(--muted);margin-top:4px">${prog.intoXP} / ${prog.spanXP} XP naar LV ${prog.level+1}</div>`;
-    cont.appendChild(div);
+  document.getElementById('s-workouts').textContent = DB_local.workouts.length;
+  document.getElementById('s-sets').textContent = DB_local.workouts.reduce((t,w)=>t+w.sets.length,0);
+  document.getElementById('s-xp').textContent = totalXP(DB_local.xp).toLocaleString('nl');
+  document.getElementById('s-level').textContent = totalLevel(DB_local.xp);
+  const cont = document.getElementById('stats-muscles'); cont.innerHTML = '';
+  MUSCLES.forEach(m => {
+    const xp = DB_local.xp[m.id]||0; const p = levelProgress(xp); const col = `hsl(${m.hue},60%,45%)`;
+    const d = document.createElement('div'); d.className = 'card';
+    d.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <span style="font-family:var(--font-d);font-size:1.1rem;color:${col}">${m.name}</span>
+      <span style="font-size:.8rem;color:var(--muted)">LV ${p.level} · ${xp.toLocaleString('nl')} XP</span>
+    </div><div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div>
+    <div style="text-align:right;font-size:.7rem;color:var(--muted);margin-top:4px">${p.intoXP} / ${p.spanXP} XP naar LV ${p.level+1}</div>`;
+    cont.appendChild(d);
   });
-  document.getElementById('setting-name').value=currentUser?.name||'';
+  if (CU) document.getElementById('setting-name').value = CU.name;
 }
 
 async function saveName() {
-  const val=document.getElementById('setting-name').value.trim(); if(!val) return;
+  const val = document.getElementById('setting-name').value.trim(); if (!val) return;
   try {
-    await supaFetch('users?id=eq.'+currentUser.id, {method:'PATCH',body:JSON.stringify({name:val})});
-    currentUser.name=val; DB.user.name=val; saveData(DB);
+    await db('users?id=eq.' + CU.id, 'PATCH', { name: val });
+    CU.name = val; DB_local.user.name = val;
+    localStorage.setItem('gu', JSON.stringify(CU));
     alert('Naam opgeslagen!');
-  } catch(e) { alert('Fout: '+e.message); }
+  } catch(e) { alert('Fout: ' + e.message); }
 }
 
-// ── TOAST ──────────────────────────────────────────────────────────────────
-function showXPToast(xp) {
-  const el=document.getElementById('xp-toast');
-  el.textContent=`+${xp} XP`; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),2000);
-}
-
-
-// ── LOGIN FUNCTION ─────────────────────────────────────────────────────────
-async function doLogin() {
-  const name = document.getElementById('login-name').value.trim();
-  if (!name) { alert('Voer je naam in!'); return; }
-  const btn = document.querySelector('#screen-login .btn-primary');
-  btn.textContent = 'Even wachten...'; btn.disabled = true;
-  try {
-    const existing = await supaFetch('users?name=eq.' + encodeURIComponent(name) + '&limit=1');
-    if (existing && existing.length > 0) {
-      currentUser = existing[0];
-    } else {
-      const newUser = { id: 'u_' + Date.now(), name: name, friend_code: genFriendCode() };
-      await supaFetch('users', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(newUser) });
-      currentUser = newUser;
-      for (const m of MUSCLES) {
-        await supaFetch('xp', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify({ user_id: currentUser.id, muscle: m.id, amount: 0 }) });
-      }
-    }
-    await syncFromDB();
-    localStorage.setItem('gymtracker_user', JSON.stringify(currentUser));
-    showApp();
-  } catch(e) {
-    console.error('doLogin error:', e);
-    alert('Fout bij inloggen: ' + e.message);
-    btn.textContent = 'Start 💪'; btn.disabled = false;
-  }
+// ── UTILS ──────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const el = document.getElementById('xp-toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────
-// Check if returning user in localStorage
-const savedUser = localStorage.getItem('gymtracker_user');
-if (savedUser) {
-  try {
-    currentUser = JSON.parse(savedUser);
-    syncFromDB().then(showApp).catch(()=>{
-      // fallback to login
-    });
-  } catch(e) {}
-}
+document.getElementById('friend-input').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
 
-// Save currentUser to localStorage when set
-const origDoLogin = doLogin;
+const saved = localStorage.getItem('gu');
+if (saved) {
+  try {
+    CU = JSON.parse(saved);
+    syncDB().then(startApp).catch(err => {
+      console.error('Auto-login failed:', err);
+      CU = null;
+    });
+  } catch(e) { CU = null; }
+}
 </script>
+</body>
+</html>
