@@ -142,25 +142,40 @@
 
   <!-- FRIENDS -->
   <div id="screen-friends" class="screen">
-    <h1 style="margin-bottom:4px;padding-top:8px">Vrienden</h1>
-    <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">Bekijk elkaars stats</div>
-    <div class="card" style="margin-bottom:16px">
-      <h3 style="margin-bottom:8px">Jouw vriendencode</h3>
-      <div style="display:flex;align-items:center;gap:8px">
-        <div id="my-friend-code" style="font-family:var(--font-d);font-size:2rem;color:var(--accent);letter-spacing:.1em">----</div>
-        <button class="btn btn-secondary" style="padding:8px 14px;font-size:.8rem" onclick="copyCode()">Kopieer</button>
-      </div>
-      <div style="font-size:.75rem;color:var(--muted);margin-top:6px">Deel deze code met vrienden</div>
+    <h1 style="margin-bottom:12px;padding-top:8px">Sociaal</h1>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;background:var(--bg3);border-radius:10px;padding:4px">
+      <button id="tab-leaderboard" class="btn" style="flex:1;padding:8px;font-size:.85rem;border-radius:8px;background:var(--bg2);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)" onclick="switchTab('leaderboard')">🏆 Leaderboard</button>
+      <button id="tab-friends" class="btn" style="flex:1;padding:8px;font-size:.85rem;border-radius:8px;background:none;color:var(--muted)" onclick="switchTab('friends')">👥 Vrienden</button>
     </div>
-    <div class="card" style="margin-bottom:16px">
-      <h3 style="margin-bottom:8px">Vriend toevoegen</h3>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="friend-input" placeholder="Vriendencode" maxlength="6" />
-        <button class="btn btn-primary" style="white-space:nowrap;padding:10px 16px" onclick="addFriend()">+ Voeg toe</button>
-      </div>
+
+    <!-- LEADERBOARD TAB -->
+    <div id="tab-content-leaderboard">
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Jij + vrienden gerangschikt op totaal level</div>
+      <div id="leaderboard-list"><div style="display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted)"><div class="spinner"></div> Laden...</div></div>
     </div>
-    <h3 style="margin-bottom:10px">Vrienden</h3>
-    <div id="friends-list"><div class="empty">Nog geen vrienden.</div></div>
+
+    <!-- FRIENDS TAB -->
+    <div id="tab-content-friends" style="display:none">
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-bottom:8px">Jouw vriendencode</h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="my-friend-code" style="font-family:var(--font-d);font-size:2rem;color:var(--accent);letter-spacing:.1em">----</div>
+          <button class="btn btn-secondary" style="padding:8px 14px;font-size:.8rem" onclick="copyCode()">Kopieer</button>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:6px">Deel deze code met vrienden</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-bottom:8px">Vriend toevoegen</h3>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="friend-input" placeholder="Vriendencode" maxlength="6" />
+          <button class="btn btn-primary" style="white-space:nowrap;padding:10px 16px" onclick="addFriend()">+ Voeg toe</button>
+        </div>
+      </div>
+      <h3 style="margin-bottom:10px">Vrienden</h3>
+      <div id="friends-list"><div class="empty">Nog geen vrienden.</div></div>
+    </div>
   </div>
 
   <!-- STATS -->
@@ -637,9 +652,40 @@ async function deleteWorkout() {
 }
 
 // ── FRIENDS ────────────────────────────────────────────────────────────────
+let currentTab = 'leaderboard';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-content-leaderboard').style.display = tab === 'leaderboard' ? 'block' : 'none';
+  document.getElementById('tab-content-friends').style.display = tab === 'friends' ? 'block' : 'none';
+  // Style active tab
+  const lb = document.getElementById('tab-leaderboard');
+  const fr = document.getElementById('tab-friends');
+  lb.style.background = tab === 'leaderboard' ? 'var(--bg2)' : 'none';
+  lb.style.color = tab === 'leaderboard' ? 'var(--text)' : 'var(--muted)';
+  lb.style.boxShadow = tab === 'leaderboard' ? '0 1px 4px rgba(0,0,0,.08)' : 'none';
+  fr.style.background = tab === 'friends' ? 'var(--bg2)' : 'none';
+  fr.style.color = tab === 'friends' ? 'var(--text)' : 'var(--muted)';
+  fr.style.boxShadow = tab === 'friends' ? '0 1px 4px rgba(0,0,0,.08)' : 'none';
+}
+
+async function getUserData(userId) {
+  const xpRows = await db('xp?user_id=eq.' + userId) || [];
+  const xmap = {}; MUSCLES.forEach(m => xmap[m.id] = 0);
+  xpRows.forEach(r => xmap[r.muscle] = r.amount);
+  const workouts = await db('workouts?user_id=eq.' + userId + '&order=date.desc&limit=100') || [];
+  return { xmap, workouts };
+}
+
 async function renderFriends() {
   if (!CU) return;
   document.getElementById('my-friend-code').textContent = CU.friend_code;
+  switchTab(currentTab);
+
+  // Load leaderboard
+  renderLeaderboard();
+
+  // Load friends list
   const list = document.getElementById('friends-list');
   list.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted)"><div class="spinner"></div> Laden...</div>';
   try {
@@ -650,9 +696,7 @@ async function renderFriends() {
       const fu = await db('users?id=eq.' + link.friend_id + '&limit=1');
       if (!fu || !fu[0]) continue;
       const f = fu[0];
-      const fxp = await db('xp?user_id=eq.' + f.id) || [];
-      const xmap = {}; MUSCLES.forEach(m => xmap[m.id] = 0);
-      fxp.forEach(r => xmap[r.muscle] = r.amount);
+      const { xmap } = await getUserData(f.id);
       const lv = totalLevel(xmap);
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer';
@@ -664,6 +708,80 @@ async function renderFriends() {
       list.appendChild(card);
     }
   } catch(e) { list.innerHTML = '<div class="empty">Kon vrienden niet laden.</div>'; console.error(e); }
+}
+
+async function renderLeaderboard() {
+  const el = document.getElementById('leaderboard-list'); if (!el) return;
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted)"><div class="spinner"></div> Laden...</div>';
+  try {
+    // Get friends
+    const links = await db('friends?user_id=eq.' + CU.id) || [];
+    const friendIds = links.map(l => l.friend_id);
+
+    // Build entries: self + friends
+    const allIds = [CU.id, ...friendIds];
+    const entries = [];
+
+    for (const uid of allIds) {
+      let name, friendCode;
+      if (uid === CU.id) { name = CU.name; friendCode = CU.friend_code; }
+      else {
+        const fu = await db('users?id=eq.' + uid + '&limit=1');
+        if (!fu || !fu[0]) continue;
+        name = fu[0].name; friendCode = fu[0].friend_code;
+      }
+      const { xmap, workouts } = await getUserData(uid);
+      const lv = totalLevel(xmap);
+      const xp = totalXP(xmap);
+      // Week workouts
+      const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      const weekW = workouts.filter(w => new Date(w.date) >= weekStart).length;
+      // Streak
+      const days = new Set(workouts.map(w => w.date.slice(0,10)));
+      let streak = 0, cur = new Date();
+      const ts = cur.toISOString().slice(0,10), ys = new Date(Date.now()-86400000).toISOString().slice(0,10);
+      if (days.has(ts) || days.has(ys)) {
+        if (!days.has(ts)) cur = new Date(Date.now()-86400000);
+        while (days.has(cur.toISOString().slice(0,10))) { streak++; cur = new Date(cur.getTime()-86400000); }
+      }
+      entries.push({ uid, name, lv, xp, weekW, streak, isMe: uid === CU.id });
+    }
+
+    // Sort by total XP
+    entries.sort((a,b) => b.xp - a.xp);
+
+    const medals = ['🥇','🥈','🥉'];
+    el.innerHTML = '';
+    entries.forEach((e, i) => {
+      const isTop = i < 3;
+      const card = document.createElement('div');
+      card.style.cssText = `background:${e.isMe ? 'var(--accent)18' : 'var(--bg2)'};border:1px solid ${e.isMe ? 'var(--accent)44' : 'var(--border)'};border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)`;
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:1.6rem;min-width:36px;text-align:center">${isTop ? medals[i] : '#'+(i+1)}</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-family:var(--font-d);font-size:1.2rem">${e.name}</span>
+              ${e.isMe ? '<span style="font-size:.65rem;background:var(--accent);color:#111;padding:1px 7px;border-radius:99px;font-weight:700">JIJ</span>' : ''}
+            </div>
+            <div style="display:flex;gap:10px;margin-top:4px">
+              <span style="font-size:.72rem;color:var(--muted)">🏋️ ${e.weekW} deze week</span>
+              <span style="font-size:.72rem;color:var(--muted)">🔥 ${e.streak} streak</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:var(--font-d);font-size:1.6rem;color:var(--accent)">${e.lv}</div>
+            <div style="font-size:.65rem;color:var(--muted)">LEVEL</div>
+          </div>
+        </div>`;
+      el.appendChild(card);
+    });
+
+    if (!entries.length) el.innerHTML = '<div class="empty">Voeg vrienden toe om te vergelijken!</div>';
+  } catch(err) {
+    el.innerHTML = '<div class="empty">Kon leaderboard niet laden.</div>';
+    console.error(err);
+  }
 }
 
 async function addFriend() {
