@@ -330,23 +330,35 @@ const SUPA_URL = 'https://amthyrpmrhrpkfgchgfz.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGh5cnBtcmhycGtmZ2NoZ2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTA3ODAsImV4cCI6MjA5NTg4Njc4MH0.U2grBGFvAtW_U33NHCITZXz1TAhpAxglQ61TTEe66Hc';
 
 async function supaFetch(path, options = {}) {
-  const res = await fetch(SUPA_URL + '/rest/v1/' + path, {
-    ...options,
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + SUPA_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': options.prefer || 'return=minimal',
-      ...(options.headers || {}),
-    },
-  });
-  if (!res.ok && res.status !== 204 && res.status !== 201) {
-    const err = await res.text();
-    throw new Error(err);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    console.log('supaFetch:', options.method || 'GET', path);
+    const res = await fetch(SUPA_URL + '/rest/v1/' + path, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': (options.headers && options.headers['Prefer']) || 'return=minimal',
+      },
+    });
+    clearTimeout(timeout);
+    console.log('supaFetch response status:', res.status);
+    if (!res.ok && res.status !== 204 && res.status !== 201) {
+      const err = await res.text();
+      console.error('supaFetch error:', err);
+      throw new Error(err);
+    }
+    const text = await res.text();
+    if (!text || text.trim() === '') return null;
+    try { return JSON.parse(text); } catch(e) { return null; }
+  } catch(e) {
+    clearTimeout(timeout);
+    if (e.name === 'AbortError') throw new Error('Verbinding time-out. Controleer je internet.');
+    throw e;
   }
-  const text = await res.text();
-  if (!text || text.trim() === '') return null;
-  try { return JSON.parse(text); } catch(e) { return null; }
 }
 
 // ── STATE ──────────────────────────────────────────────────────────────────
@@ -365,7 +377,7 @@ function genFriendCode() {
   return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
 }
 
-// doLogin defined below
+
 
 async function syncFromDB() {
   // Load XP
@@ -811,6 +823,35 @@ function showXPToast(xp) {
   setTimeout(()=>el.classList.remove('show'),2000);
 }
 
+
+// ── LOGIN FUNCTION ─────────────────────────────────────────────────────────
+async function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  if (!name) { alert('Voer je naam in!'); return; }
+  const btn = document.querySelector('#screen-login .btn-primary');
+  btn.textContent = 'Even wachten...'; btn.disabled = true;
+  try {
+    const existing = await supaFetch('users?name=eq.' + encodeURIComponent(name) + '&limit=1');
+    if (existing && existing.length > 0) {
+      currentUser = existing[0];
+    } else {
+      const newUser = { id: 'u_' + Date.now(), name: name, friend_code: genFriendCode() };
+      await supaFetch('users', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(newUser) });
+      currentUser = newUser;
+      for (const m of MUSCLES) {
+        await supaFetch('xp', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify({ user_id: currentUser.id, muscle: m.id, amount: 0 }) });
+      }
+    }
+    await syncFromDB();
+    localStorage.setItem('gymtracker_user', JSON.stringify(currentUser));
+    showApp();
+  } catch(e) {
+    console.error('doLogin error:', e);
+    alert('Fout bij inloggen: ' + e.message);
+    btn.textContent = 'Start 💪'; btn.disabled = false;
+  }
+}
+
 // ── INIT ───────────────────────────────────────────────────────────────────
 // Check if returning user in localStorage
 const savedUser = localStorage.getItem('gymtracker_user');
@@ -825,60 +866,4 @@ if (savedUser) {
 
 // Save currentUser to localStorage when set
 const origDoLogin = doLogin;
-</script>
-<script>
-// Save user after login
-async function doLogin() {
-  const name = document.getElementById('login-name').value.trim();
-  if (!name) { alert('Voer je naam in!'); return; }
-  const btn = document.querySelector('#screen-login .btn-primary');
-  btn.textContent = 'Even wachten...'; btn.disabled = true;
-
-  try {
-    // Step 1: check if user exists
-    const existing = await supaFetch('users?name=eq.' + encodeURIComponent(name) + '&limit=1');
-    
-    if (existing && existing.length > 0) {
-      // Returning user
-      currentUser = existing[0];
-    } else {
-      // New user
-      const newUser = {
-        id: 'u_' + Date.now(),
-        name: name,
-        friend_code: genFriendCode()
-      };
-      // Insert user
-      await supaFetch('users', {
-        method: 'POST',
-        headers: { 'Prefer': 'return=minimal' },
-        body: JSON.stringify(newUser)
-      });
-      currentUser = newUser;
-      // Insert XP rows one by one to avoid issues
-      for (const m of MUSCLES) {
-        await supaFetch('xp', {
-          method: 'POST',
-          headers: { 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ user_id: currentUser.id, muscle: m.id, amount: 0 })
-        });
-      }
-    }
-
-    // Step 2: load data
-    await syncFromDB();
-
-    // Step 3: save session
-    localStorage.setItem('gymtracker_user', JSON.stringify(currentUser));
-
-    // Step 4: show app
-    showApp();
-
-  } catch(e) {
-    console.error(e);
-    alert('Fout bij inloggen: ' + e.message);
-    btn.textContent = 'Start 💪';
-    btn.disabled = false;
-  }
-}
 </script>
