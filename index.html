@@ -83,9 +83,13 @@
   <div id="screen-home" class="screen">
     <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-bottom:18px">
       <div style="display:flex;align-items:center;gap:12px">
-        <div id="home-avatar" onclick="changeAvatar()" style="width:48px;height:48px;border-radius:50%;background:var(--bg3);border:2px solid var(--accent);overflow:hidden;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem">
-          <img id="home-avatar-img" src="" style="width:100%;height:100%;object-fit:cover;display:none" />
-          <span id="home-avatar-initials">?</span>
+        <div style="position:relative;flex-shrink:0">
+          <div id="home-avatar" onclick="viewMyPhoto()" style="width:54px;height:54px;border-radius:50%;background:var(--bg3);border:2px solid var(--accent);overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem">
+            <img id="home-avatar-img" src="" style="width:100%;height:100%;object-fit:cover;display:none" />
+            <span id="home-avatar-initials">?</span>
+          </div>
+          <!-- Edit button -->
+          <div onclick="changeAvatar()" style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.65rem;box-shadow:0 1px 4px rgba(0,0,0,.2)">✏️</div>
         </div>
         <div>
           <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Welkom terug</div>
@@ -292,6 +296,13 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Stats
     </button>
   </nav>
+</div>
+
+<!-- Photo viewer modal -->
+<div id="photo-viewer" onclick="closePhotoViewer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;align-items:center;justify-content:center;flex-direction:column">
+  <img id="photo-viewer-img" src="" style="max-width:90vw;max-height:80vh;border-radius:16px;object-fit:contain" />
+  <div id="photo-viewer-name" style="color:white;font-family:var(--font-d);font-size:1.4rem;margin-top:16px;letter-spacing:.04em"></div>
+  <div style="color:rgba(255,255,255,.5);font-size:.8rem;margin-top:6px">Tik om te sluiten</div>
 </div>
 
 <div class="xp-toast" id="xp-toast"></div>
@@ -819,7 +830,7 @@ async function loadFriendsList() {
       const { xmap } = await getUserData(f.id);
       const lv = totalLevel(xmap);
       const idx = fi++;
-      window._friendsCache[idx] = { f, xmap };
+      window._friendsCache[idx] = { f: {...f}, xmap };
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)';
       card.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -950,7 +961,9 @@ async function renderLeaderboard() {
           <div style="font-size:1.6rem;min-width:36px;text-align:center">${isTop ? medals[i] : '#'+(i+1)}</div>
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:6px">
-              ${e.avatar ? `<img src="${e.avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />` : `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:var(--muted)">${e.name[0].toUpperCase()}</div>`}
+              <div onclick="${e.avatar ? `viewPhoto('${e.avatar}','${e.name}')` : ''}" style="${e.avatar ? 'cursor:pointer' : ''}">
+                ${e.avatar ? `<img src="${e.avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--accent)" />` : `<div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:var(--muted)">${e.name[0].toUpperCase()}</div>`}
+              </div>
               <span style="font-family:var(--font-d);font-size:1.2rem">${e.name}</span>
               ${e.isMe ? '<span style="font-size:.65rem;background:var(--accent);color:#111;padding:1px 7px;border-radius:99px;font-weight:700">JIJ</span>' : ''}
             </div>
@@ -1006,10 +1019,22 @@ function openFriendDetail(f, xmap) {
   el.classList.add('active'); el.style.display = 'block';
   const lv = totalLevel(xmap);
   const tier = tierForLevel(Math.round(lv / MUSCLES.length));
-  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-    <div class="card"><div style="font-family:var(--font-d);font-size:2rem;color:var(--accent)">${lv}</div><div style="font-size:.75rem;color:var(--muted)">Totaal Level</div></div>
-    <div class="card"><div style="font-family:var(--font-d);font-size:1.4rem;color:${tier.color}">${tier.name}</div><div style="font-size:.75rem;color:var(--muted)">Rang</div></div>
-  </div><h3 style="margin-bottom:10px">Per spiergroep</h3>`;
+  let html = `
+  <!-- Friend profile header -->
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 2px 8px rgba(0,0,0,.06)">
+    <div onclick="${f.avatar_url ? `viewPhoto('${f.avatar_url}','${f.name}')` : ''}" style="width:60px;height:60px;border-radius:50%;background:var(--bg3);border:2px solid var(--accent);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;${f.avatar_url ? 'cursor:pointer' : ''}">
+      ${f.avatar_url ? `<img src="${f.avatar_url}" style="width:100%;height:100%;object-fit:cover" />` : `<span>${f.name[0].toUpperCase()}</span>`}
+    </div>
+    <div>
+      <div style="font-family:var(--font-d);font-size:1.6rem;line-height:1">${f.name}</div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <span style="font-family:var(--font-d);font-size:1.1rem;color:var(--accent)">${lv}</span>
+        <span style="font-size:.8rem;color:var(--muted);align-self:center">Level</span>
+        <span style="font-size:.8rem;font-weight:700;color:${tier.color};align-self:center">${tier.name}</span>
+      </div>
+    </div>
+  </div>
+  <h3 style="margin-bottom:10px">Per spiergroep</h3>`;
   MUSCLES.forEach(m => {
     const xp = xmap[m.id]||0; const p = levelProgress(xp); const col = `hsl(${m.hue},60%,45%)`;
     html += `<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:8px">
@@ -1036,6 +1061,26 @@ async function uploadToStorage(bucket, path, file) {
   });
   if (!res.ok) throw new Error('Upload mislukt: ' + await res.text());
   return SUPA_URL + '/storage/v1/object/public/' + bucket + '/' + path;
+}
+
+function viewPhoto(url, name) {
+  if (!url) return;
+  const viewer = document.getElementById('photo-viewer');
+  document.getElementById('photo-viewer-img').src = url;
+  document.getElementById('photo-viewer-name').textContent = name || '';
+  viewer.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closePhotoViewer() {
+  document.getElementById('photo-viewer').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function viewMyPhoto() {
+  if (CU && CU.avatar_url) {
+    viewPhoto(CU.avatar_url, CU.name);
+  }
 }
 
 function changeAvatar() {
