@@ -23,9 +23,10 @@
     }
     html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-b); font-size: 15px; overflow: hidden; }
     #app { display: flex; flex-direction: column; height: 100dvh; }
-    .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px 90px; opacity: 0; transform: translateY(8px); transition: opacity .22s ease, transform .22s ease; }
+    .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px 90px; }
     .screen.active { display: block; }
-    .screen.visible { opacity: 1; transform: translateY(0); }
+    .screen.animatable { opacity: 0; transform: translateY(8px); transition: opacity .22s ease, transform .22s ease; }
+    .screen.animatable.visible { opacity: 1; transform: translateY(0); }
     @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
     .animate-in { animation: fadeUp .25s ease forwards; }
     nav { display: flex; justify-content: space-around; align-items: center; background: var(--bg2); border-top: 1px solid var(--border); box-shadow: 0 -2px 12px rgba(0,0,0,.08); padding: 8px 0 max(8px, env(safe-area-inset-bottom)); position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; }
@@ -442,7 +443,11 @@ function goTo(screen) {
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.classList.remove('visible'); s.style.display = ''; });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
-  if (el) { el.classList.add('active'); el.style.display = 'block'; setTimeout(() => el.classList.add('visible'), 10); }
+  if (el) {
+    el.classList.add('active', 'animatable');
+    el.style.display = 'block';
+    setTimeout(() => el.classList.add('visible'), 10);
+  }
   const nb = document.getElementById('nav-' + screen);
   if (nb) nb.classList.add('active');
   if (screen === 'home') renderHome();
@@ -1497,7 +1502,9 @@ function nextOnboard() {
 function skipOnboard() {
   document.getElementById('screen-onboarding').style.display = 'none';
   localStorage.setItem('onboarded', '1');
-  document.getElementById('screen-login').style.display = 'flex';
+  const login = document.getElementById('screen-login');
+  login.style.display = 'flex';
+  login.style.opacity = '1';
 }
 
 // ── PROGRESS GRAPH ──────────────────────────────────────────────────────────
