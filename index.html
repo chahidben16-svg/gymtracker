@@ -911,20 +911,21 @@ async function renderLeaderboard() {
     const entries = [];
 
     for (const uid of allIds) {
-      let name, friendCode;
-      if (uid === CU.id) { name = CU.name; friendCode = CU.friend_code; }
-      else {
+      let name, avatarUrl;
+      if (uid === CU.id) {
+        name = CU.name;
+        avatarUrl = CU.avatar_url || null;
+      } else {
         const fu = await db('users?id=eq.' + uid + '&limit=1');
         if (!fu || !fu[0]) continue;
-        name = fu[0].name; friendCode = fu[0].friend_code;
+        name = fu[0].name;
+        avatarUrl = fu[0].avatar_url || null;
       }
       const { xmap, workouts } = await getUserData(uid);
       const lv = totalLevel(xmap);
       const xp = totalXP(xmap);
-      // Week workouts
       const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
       const weekW = workouts.filter(w => new Date(w.date) >= weekStart).length;
-      // Streak
       const days = new Set(workouts.map(w => w.date.slice(0,10)));
       let streak = 0, cur = new Date();
       const ts = cur.toISOString().slice(0,10), ys = new Date(Date.now()-86400000).toISOString().slice(0,10);
@@ -932,7 +933,6 @@ async function renderLeaderboard() {
         if (!days.has(ts)) cur = new Date(Date.now()-86400000);
         while (days.has(cur.toISOString().slice(0,10))) { streak++; cur = new Date(cur.getTime()-86400000); }
       }
-      const avatarUrl = uid === CU.id ? (CU.avatar_url || null) : (fu && fu[0] ? fu[0].avatar_url : null);
       entries.push({ uid, name, lv, xp, weekW, streak, isMe: uid === CU.id, avatar: avatarUrl });
     }
 
