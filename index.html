@@ -23,8 +23,11 @@
     }
     html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-b); font-size: 15px; overflow: hidden; }
     #app { display: flex; flex-direction: column; height: 100dvh; }
-    .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px 90px; }
+    .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px 90px; opacity: 0; transform: translateY(8px); transition: opacity .22s ease, transform .22s ease; }
     .screen.active { display: block; }
+    .screen.visible { opacity: 1; transform: translateY(0); }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    .animate-in { animation: fadeUp .25s ease forwards; }
     nav { display: flex; justify-content: space-around; align-items: center; background: var(--bg2); border-top: 1px solid var(--border); box-shadow: 0 -2px 12px rgba(0,0,0,.08); padding: 8px 0 max(8px, env(safe-area-inset-bottom)); position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; }
     .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; color: var(--muted); font-family: var(--font-b); font-size: 10px; font-weight: 500; padding: 4px 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .nav-btn svg { width: 22px; height: 22px; }
@@ -66,6 +69,25 @@
 </head>
 <body>
 <div id="app">
+
+  <!-- SPLASH -->
+  <div id="screen-splash" style="position:fixed;inset:0;background:#0d0d0f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;transition:opacity .5s">
+    <div style="font-family:'Bebas Neue',cursive;font-size:56px;color:#c9a84c;letter-spacing:.06em;margin-bottom:6px">GYMMINGS</div>
+    <div style="color:#6b6b80;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:40px">Train. Level up. Compete.</div>
+    <div style="width:80px;height:3px;background:#c9a84c22;border-radius:99px;overflow:hidden">
+      <div id="splash-bar" style="height:100%;width:0%;background:#c9a84c;border-radius:99px;transition:width 1.8s ease-in-out"></div>
+    </div>
+  </div>
+
+  <!-- ONBOARDING -->
+  <div id="screen-onboarding" style="display:none;position:fixed;inset:0;background:#fff;z-index:900;flex-direction:column;align-items:center;justify-content:flex-start;padding:32px 24px">
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:32px" id="ob-dots"></div>
+    <div id="ob-content" style="flex:1;display:flex;flex-direction:column;align-items:center;width:100%;max-width:340px"></div>
+    <div style="width:100%;max-width:340px">
+      <button id="ob-next" class="btn btn-primary btn-full" style="padding:14px;font-size:1rem" onclick="nextOnboard()">Volgende →</button>
+      <button id="ob-skip" class="btn btn-secondary btn-full" style="padding:10px;margin-top:8px" onclick="skipOnboard()">Overslaan</button>
+    </div>
+  </div>
 
   <!-- LOGIN -->
   <div id="screen-login" class="screen active" style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100dvh;padding:32px 24px;text-align:center">
@@ -222,6 +244,15 @@
     </div>
     <h3 style="margin-bottom:10px">Per spiergroep</h3>
     <div id="stats-muscles"></div>
+
+    <div class="divider"></div>
+    <h3 style="margin-bottom:4px">Progressie per oefening</h3>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Jouw beste gewicht over tijd</div>
+    <div class="card" style="margin-bottom:8px">
+      <select id="progress-muscle-sel" onchange="renderProgressGraph()" style="margin-bottom:10px"></select>
+      <select id="progress-ex-sel" onchange="renderProgressGraph()"></select>
+    </div>
+    <div id="progress-graph" style="margin-bottom:16px"></div>
     <div class="divider"></div>
     <h3 style="margin-bottom:10px">Badges</h3>
     <div id="badges-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px"></div>
@@ -393,6 +424,7 @@ async function syncDB() {
 
 function startApp() {
   document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('screen-onboarding').style.display = 'none';
   document.getElementById('main-nav').style.display = 'flex';
   goTo('home');
 }
@@ -407,10 +439,10 @@ function goTo(screen) {
     clearInterval(trashInterval);
     trashInterval = null;
   }
-  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.classList.remove('visible'); s.style.display = ''; });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
-  if (el) { el.classList.add('active'); el.style.display = 'block'; }
+  if (el) { el.classList.add('active'); el.style.display = 'block'; setTimeout(() => el.classList.add('visible'), 10); }
   const nb = document.getElementById('nav-' + screen);
   if (nb) nb.classList.add('active');
   if (screen === 'home') renderHome();
@@ -1376,6 +1408,8 @@ function renderStats() {
   if (CU) document.getElementById('setting-name').value = CU.name;
   renderBadges();
   renderPRs();
+  initProgressSelects();
+  renderProgressGraph();
 }
 
 async function saveName() {
@@ -1406,19 +1440,176 @@ function showPRToast(prs) {
   }, 3000);
 }
 
+// ── SPLASH ─────────────────────────────────────────────────────────────────
+function showSplash(callback) {
+  const splash = document.getElementById('screen-splash');
+  const bar = document.getElementById('splash-bar');
+  splash.style.opacity = '1';
+  splash.style.display = 'flex';
+  setTimeout(() => { bar.style.width = '100%'; }, 50);
+  setTimeout(() => {
+    splash.style.opacity = '0';
+    setTimeout(() => { splash.style.display = 'none'; callback(); }, 500);
+  }, 2000);
+}
+
+// ── ONBOARDING ──────────────────────────────────────────────────────────────
+const ONBOARD_STEPS = [
+  { icon: '🏋️', title: 'Track je workouts', desc: 'Log elke oefening, verdien XP en zie hoe je groeit per spiergroep.', color: '#c9a84c' },
+  { icon: '🏆', title: 'Compete met vrienden', desc: 'Voeg vrienden toe via een code en zie wie het hoogst scoort op het leaderboard.', color: '#534AB7' },
+  { icon: '🏅', title: 'Verdien badges', desc: 'Behaal achievements voor streaks, workouts en persoonlijke records.', color: '#0F6E56' },
+];
+let obStep = 0;
+
+function showOnboarding() {
+  const el = document.getElementById('screen-onboarding');
+  el.style.display = 'flex';
+  obStep = 0;
+  renderOnboardStep();
+}
+
+function renderOnboardStep() {
+  const step = ONBOARD_STEPS[obStep];
+  const dots = document.getElementById('ob-dots');
+  dots.innerHTML = ONBOARD_STEPS.map((_, i) =>
+    `<div style="height:6px;border-radius:99px;background:${i===obStep?'var(--accent)':'var(--border)'};width:${i===obStep?'18px':'6px'};transition:all .3s"></div>`
+  ).join('');
+  const content = document.getElementById('ob-content');
+  content.innerHTML = `
+    <div style="font-size:72px;text-align:center;margin:24px 0 16px;animation:fadeUp .3s ease">${step.icon}</div>
+    <div style="font-family:var(--font-d);font-size:2rem;text-align:center;color:var(--text);margin-bottom:12px">${step.title}</div>
+    <div style="font-size:.9rem;color:var(--muted);text-align:center;line-height:1.6;max-width:280px">${step.desc}</div>`;
+  const nextBtn = document.getElementById('ob-next');
+  const skipBtn = document.getElementById('ob-skip');
+  nextBtn.textContent = obStep === ONBOARD_STEPS.length - 1 ? 'Aan de slag! 💪' : 'Volgende →';
+  skipBtn.style.display = obStep === ONBOARD_STEPS.length - 1 ? 'none' : 'block';
+}
+
+function nextOnboard() {
+  if (obStep < ONBOARD_STEPS.length - 1) {
+    obStep++;
+    renderOnboardStep();
+  } else {
+    skipOnboard();
+  }
+}
+
+function skipOnboard() {
+  document.getElementById('screen-onboarding').style.display = 'none';
+  localStorage.setItem('onboarded', '1');
+  document.getElementById('screen-login').style.display = 'flex';
+}
+
+// ── PROGRESS GRAPH ──────────────────────────────────────────────────────────
+function renderProgressGraph() {
+  const mid = document.getElementById('progress-muscle-sel')?.value;
+  const eid = document.getElementById('progress-ex-sel')?.value;
+  const el = document.getElementById('progress-graph');
+  if (!mid || !eid || !el) return;
+
+  // Get all sets for this exercise over time
+  const points = [];
+  DB_local.workouts
+    .filter(w => w.muscle === mid || (w.muscles && w.muscles.includes(mid)))
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .forEach(w => {
+      const sets = w.sets.filter(s => s.exercise === eid);
+      if (!sets.length) return;
+      const best = sets.reduce((max, s) => s.weight > max ? s.weight : max, 0);
+      const bestReps = sets.reduce((max, s) => s.reps > max ? s.reps : max, 0);
+      const unit = sets[0].unit;
+      points.push({ date: w.date, value: unit === 'bw' ? bestReps : best, unit, label: formatDate(w.date) });
+    });
+
+  if (!points.length) {
+    el.innerHTML = '<div class="empty">Geen data voor deze oefening.</div>';
+    return;
+  }
+
+  const max = Math.max(...points.map(p => p.value), 1);
+  const unit = points[0].unit;
+  const unitLabel = unit === 'bw' ? 'reps' : unit === 'sec' ? 'sec' : 'kg';
+
+  let html = `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">Progressie</div>
+      <div style="font-family:var(--font-d);font-size:1.2rem;color:var(--accent)">${points[points.length-1].value} ${unitLabel}</div>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:8px">`;
+
+  points.forEach((p, i) => {
+    const h = Math.max((p.value / max) * 100, 8);
+    const isLast = i === points.length - 1;
+    html += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="width:100%;background:${isLast ? 'var(--accent)' : '#a07830'};border-radius:3px 3px 0 0;height:${h}%;transition:height .4s ease"></div>
+      <div style="font-size:.55rem;color:${isLast?'var(--accent)':'var(--muted)'}">${p.label.substring(0,3)}</div>
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  // Show improvement
+  if (points.length > 1) {
+    const first = points[0].value;
+    const last = points[points.length-1].value;
+    const diff = last - first;
+    const pct = first > 0 ? Math.round((diff/first)*100) : 0;
+    html += `<div style="display:flex;justify-content:space-between;font-size:.78rem;padding-top:8px;border-top:1px solid var(--border)">
+      <span style="color:var(--muted)">Start: <strong>${first} ${unitLabel}</strong></span>
+      <span style="${diff>=0?'color:#2a7a2a':'color:#cc3333'}">
+        ${diff>=0?'▲':'▼'} ${Math.abs(diff)} ${unitLabel} (${diff>=0?'+':''}${pct}%)
+      </span>
+    </div>`;
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function initProgressSelects() {
+  const mSel = document.getElementById('progress-muscle-sel');
+  const eSel = document.getElementById('progress-ex-sel');
+  if (!mSel || !eSel) return;
+  mSel.innerHTML = MUSCLES.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+  mSel.addEventListener('change', () => {
+    const mid = mSel.value;
+    eSel.innerHTML = (EXERCISES[mid]||[]).map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+    renderProgressGraph();
+  });
+  // Init exercise list
+  const mid = mSel.value;
+  eSel.innerHTML = (EXERCISES[mid]||[]).map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+}
+
 // ── INIT ───────────────────────────────────────────────────────────────────
 document.getElementById('friend-input').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
 
-const saved = localStorage.getItem('gu');
-if (saved) {
-  try {
-    CU = JSON.parse(saved);
-    syncDB().then(startApp).catch(err => {
-      console.error('Auto-login failed:', err);
+function afterSplash() {
+  const saved = localStorage.getItem('gu');
+  const onboarded = localStorage.getItem('onboarded');
+  if (saved) {
+    try {
+      CU = JSON.parse(saved);
+      syncDB().then(startApp).catch(err => {
+        console.error('Auto-login failed:', err);
+        CU = null;
+        if (!onboarded) showOnboarding();
+        else document.getElementById('screen-login').style.display = 'flex';
+      });
+    } catch(e) {
       CU = null;
-    });
-  } catch(e) { CU = null; }
+      if (!onboarded) showOnboarding();
+      else document.getElementById('screen-login').style.display = 'flex';
+    }
+  } else {
+    if (!onboarded) showOnboarding();
+    else document.getElementById('screen-login').style.display = 'flex';
+  }
 }
+
+// Hide login initially, show after splash
+document.getElementById('screen-login').style.display = 'none';
+showSplash(afterSplash);
 </script>
 </body>
 </html>
