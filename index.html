@@ -21,6 +21,10 @@
       --font-d: 'Bebas Neue', sans-serif;
       --font-b: 'DM Sans', sans-serif;
     }
+    .dark-mode {
+      --bg: #0d0d0f; --bg2: #16161a; --bg3: #1e1e24;
+      --border: #2a2a33; --text: #e8e8f0; --muted: #6b6b80;
+    }
     html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-b); font-size: 15px; overflow: hidden; }
     #app { display: flex; flex-direction: column; height: 100dvh; }
     .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px 90px; }
@@ -269,6 +273,17 @@
       <div style="display:flex;gap:8px;margin-top:8px">
         <input type="text" id="setting-name" placeholder="Nieuwe naam" />
         <button class="btn btn-secondary" style="white-space:nowrap" onclick="saveName()">Opslaan</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-weight:600;font-size:.95rem">🌙 Dark mode</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">Donker thema</div>
+        </div>
+        <div id="dark-toggle" onclick="toggleDarkMode()" style="width:48px;height:28px;border-radius:99px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;position:relative;transition:background .2s">
+          <div id="dark-thumb" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:all .2s"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1415,6 +1430,7 @@ function renderStats() {
   renderPRs();
   initProgressSelects();
   renderProgressGraph();
+  updateDarkToggle(document.body.classList.contains('dark-mode'));
 }
 
 async function saveName() {
@@ -1443,6 +1459,38 @@ function showPRToast(prs) {
     el.classList.remove('show');
     el.style.background = '';
   }, 3000);
+}
+
+// ── DARK MODE ──────────────────────────────────────────────────────────────
+function toggleDarkMode() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('dark_mode', isDark ? '1' : '0');
+  updateDarkToggle(isDark);
+  // Update theme color for browser UI
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = isDark ? '#0d0d0f' : '#f5f5f0';
+}
+
+function updateDarkToggle(isDark) {
+  const toggle = document.getElementById('dark-toggle');
+  const thumb = document.getElementById('dark-thumb');
+  if (!toggle || !thumb) return;
+  if (isDark) {
+    toggle.style.background = 'var(--accent)';
+    thumb.style.left = '24px';
+    thumb.style.background = '#111';
+  } else {
+    toggle.style.background = 'var(--bg3)';
+    thumb.style.left = '3px';
+    thumb.style.background = 'var(--muted)';
+  }
+}
+
+function initDarkMode() {
+  const saved = localStorage.getItem('dark_mode');
+  if (saved === '1') {
+    document.body.classList.add('dark-mode');
+  }
 }
 
 // ── SPLASH ─────────────────────────────────────────────────────────────────
@@ -1613,6 +1661,9 @@ function afterSplash() {
     else document.getElementById('screen-login').style.display = 'flex';
   }
 }
+
+// Init dark mode immediately
+initDarkMode();
 
 // Hide login initially, show after splash
 document.getElementById('screen-login').style.display = 'none';
