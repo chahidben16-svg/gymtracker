@@ -155,14 +155,32 @@
     <h3 style="margin-bottom:10px">Spiergroepen</h3>
     <div class="muscle-grid" id="muscle-grid"></div>
     <div style="height:12px"></div>
-    <h3 style="margin-bottom:10px">Recente workouts</h3>
-    <div id="recent-list"></div>
+    <div style="display:flex;gap:6px;background:var(--bg3);border-radius:10px;padding:3px;margin-bottom:10px">
+      <button id="tab-mine" onclick="switchHomeTab('mine')" style="flex:1;padding:7px;font-size:.82rem;border-radius:8px;background:var(--bg2);border:none;font-family:var(--font-b);font-weight:600;color:var(--text);cursor:pointer">Mijn workouts</button>
+      <button id="tab-feed" onclick="switchHomeTab('feed')" style="flex:1;padding:7px;font-size:.82rem;border-radius:8px;background:none;border:none;font-family:var(--font-b);font-weight:600;color:var(--muted);cursor:pointer">Feed vrienden</button>
+    </div>
+    <div id="tab-mine-content">
+      <h3 style="margin-bottom:10px">Recente workouts</h3>
+      <div id="recent-list"></div>
+    </div>
+    <div id="tab-feed-content" style="display:none">
+      <div id="social-feed-list"><div class="loading"><div class="spinner"></div> Laden...</div></div>
+    </div>
   </div>
 
   <!-- LOG -->
   <div id="screen-log" class="screen">
     <h1 style="margin-bottom:4px;padding-top:8px">Log Workout</h1>
     <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">Voeg alle oefeningen toe en sla dan op</div>
+
+    <!-- Templates -->
+    <div id="templates-section" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h3>Templates</h3>
+        <button class="btn btn-secondary" style="padding:5px 12px;font-size:.78rem" onclick="saveAsTemplate()">+ Opslaan als template</button>
+      </div>
+      <div id="templates-list" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
 
     <!-- Exercise blocks -->
     <div id="exercise-blocks"></div>
@@ -259,6 +277,25 @@
     </div>
     <div id="progress-graph" style="margin-bottom:16px"></div>
     <div class="divider"></div>
+    <h3 style="margin-bottom:10px">Activiteitskalender</h3>
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-family:var(--font-d);font-size:1.2rem" id="cal-month-label">Juni 2026</div>
+        <div style="font-size:.75rem;color:var(--accent);font-weight:600" id="cal-count"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+        <div style="font-size:.6rem;color:var(--muted);text-align:center">M</div>
+        <div style="font-size:.6rem;color:var(--muted);text-align:center">D</div>
+        <div style="font-size:.6rem;color:var(--muted);text-align:center">W</div>
+        <div style="font-size:.6rem;color:var(--muted);text-align:center">D</div>
+        <div style="font-size:.6rem;color:var(--muted);text-align:center">V</div>
+        <div style="font-size:.6rem;color:var(--muted);text-align:center">Z</div>
+        <div style="font-size:.6rem;color:var(--muted);text-align:center">Z</div>
+      </div>
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+    </div>
+
+    <div class="divider"></div>
     <h3 style="margin-bottom:10px">Badges</h3>
     <div id="badges-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px"></div>
 
@@ -353,6 +390,19 @@
 </div>
 
 <div class="xp-toast" id="xp-toast"></div>
+
+<!-- Level-up overlay -->
+<div id="levelup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:400;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px" onclick="closeLevelUp()">
+  <div style="font-size:64px;margin-bottom:8px" id="lu-emoji">🎉</div>
+  <div style="color:#c9a84c;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">Level up!</div>
+  <div id="lu-level" style="font-family:'Bebas Neue',cursive;font-size:80px;color:#fff;line-height:1">10</div>
+  <div id="lu-muscle" style="font-family:'Bebas Neue',cursive;font-size:22px;color:#c9a84c;letter-spacing:.04em;margin-bottom:20px">BORST</div>
+  <div id="lu-tier" style="background:#c9a84c22;border:1px solid #c9a84c44;border-radius:12px;padding:12px 24px;margin-bottom:20px">
+    <div id="lu-tier-name" style="font-size:13px;color:#c9a84c;font-weight:600"></div>
+    <div style="font-size:11px;color:#6b6b80;margin-top:2px">bereikt!</div>
+  </div>
+  <div style="color:rgba(255,255,255,.4);font-size:11px">Tik om door te gaan</div>
+</div>
 <div class="modal-overlay" id="workout-modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -579,6 +629,7 @@ function startToday() {
 let exerciseBlocks = [];
 
 function renderLog() {
+  renderTemplates();
   if (!exerciseBlocks.length) addExerciseBlock();
   else renderAllBlocks();
 }
@@ -717,8 +768,10 @@ async function saveWorkout() {
     // Update XP for each muscle
     for (const mid of muscleIds) {
       const muscleXP = byMuscle[mid].reduce((t,s) => t + setXP(s, s.unit), 0);
-      const newXP = (DB_local.xp[mid] || 0) + muscleXP;
+      const oldXP = DB_local.xp[mid] || 0;
+      const newXP = oldXP + muscleXP;
       await db('xp?user_id=eq.' + CU.id + '&muscle=eq.' + mid, 'PATCH', { amount: newXP });
+      checkLevelUp(mid, oldXP, newXP);
       DB_local.xp[mid] = newXP;
     }
     // Check for new PRs before adding workout
@@ -1065,6 +1118,8 @@ function copyCode() {
 
 function openFriendDetail(f, xmap) {
   document.getElementById('fd-name').textContent = f.name;
+  window._currentFriend = f;
+  window._currentXmap = xmap;
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById('screen-friend-detail');
@@ -1086,6 +1141,11 @@ function openFriendDetail(f, xmap) {
       </div>
     </div>
   </div>
+  <div style="display:flex;gap:6px;margin-bottom:12px">
+    <button onclick="showFriendTab('stats')" id="ftab-stats" style="flex:1;padding:8px;font-size:.82rem;border-radius:8px;background:var(--accent);border:none;font-family:var(--font-b);font-weight:600;color:#111;cursor:pointer">Stats</button>
+    <button onclick="showFriendTab('compare')" id="ftab-compare" style="flex:1;padding:8px;font-size:.82rem;border-radius:8px;background:var(--bg3);border:none;font-family:var(--font-b);font-weight:600;color:var(--muted);cursor:pointer">Vergelijk</button>
+  </div>
+  <div id="ftab-stats-content">
   <h3 style="margin-bottom:10px">Per spiergroep</h3>`;
   MUSCLES.forEach(m => {
     const xp = xmap[m.id]||0; const p = levelProgress(xp); const col = `hsl(${m.hue},60%,45%)`;
@@ -1094,7 +1154,61 @@ function openFriendDetail(f, xmap) {
       <span style="font-size:.8rem;color:var(--muted)">LV ${p.level} · ${xp.toLocaleString('nl')} XP</span>
     </div><div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${(p.into*100).toFixed(1)}%;background:${col}"></div></div></div>`;
   });
-  document.getElementById('fd-content').innerHTML = html;
+  document.getElementById('fd-content').innerHTML = html + '</div><div id="ftab-compare-content" style="display:none"></div>';
+}
+
+function showFriendTab(tab) {
+  const statsEl = document.getElementById('ftab-stats-content');
+  const compareEl = document.getElementById('ftab-compare-content');
+  const statsBtn = document.getElementById('ftab-stats');
+  const compareBtn = document.getElementById('ftab-compare');
+  if (!statsEl) return;
+  if (tab === 'stats') {
+    statsEl.style.display = 'block';
+    compareEl.style.display = 'none';
+    statsBtn.style.background = 'var(--accent)'; statsBtn.style.color = '#111';
+    compareBtn.style.background = 'var(--bg3)'; compareBtn.style.color = 'var(--muted)';
+  } else {
+    statsEl.style.display = 'none';
+    compareEl.style.display = 'block';
+    statsBtn.style.background = 'var(--bg3)'; statsBtn.style.color = 'var(--muted)';
+    compareBtn.style.background = 'var(--accent)'; compareBtn.style.color = '#111';
+    renderCompare(window._currentFriend, window._currentXmap);
+  }
+}
+
+function renderCompare(friend, friendXmap) {
+  const el = document.getElementById('ftab-compare-content');
+  if (!el) return;
+  let html = `<div style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:var(--accent);border-radius:2px"></div><span style="font-size:.78rem;font-weight:600">Jij</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:var(--muted);border-radius:2px"></div><span style="font-size:.78rem;font-weight:600">${friend.name}</span></div>
+    </div>`;
+
+  MUSCLES.forEach(m => {
+    const myXP = DB_local.xp[m.id] || 0;
+    const frXP = friendXmap[m.id] || 0;
+    const maxXP = Math.max(myXP, frXP, 1);
+    const myLv = levelFromXP(myXP);
+    const frLv = levelFromXP(frXP);
+    html += `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:3px">
+        <span style="font-weight:600">${m.name}</span>
+        <span style="color:${myLv>=frLv?'var(--accent)':'var(--muted)'}">LV${myLv} vs LV${frLv}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="background:var(--bg3);border-radius:99px;height:8px;overflow:hidden">
+          <div style="width:${Math.round(myXP/maxXP*100)}%;background:var(--accent);height:100%;border-radius:99px"></div>
+        </div>
+        <div style="background:var(--bg3);border-radius:99px;height:8px;overflow:hidden">
+          <div style="width:${Math.round(frXP/maxXP*100)}%;background:var(--muted);height:100%;border-radius:99px"></div>
+        </div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 // ── PHOTOS ─────────────────────────────────────────────────────────────────
@@ -1431,6 +1545,7 @@ function renderStats() {
   initProgressSelects();
   renderProgressGraph();
   updateDarkToggle(document.body.classList.contains('dark-mode'));
+  renderCalendar();
 }
 
 async function saveName() {
@@ -1459,6 +1574,178 @@ function showPRToast(prs) {
     el.classList.remove('show');
     el.style.background = '';
   }, 3000);
+}
+
+// ── SOCIAL FEED ────────────────────────────────────────────────────────────
+let homeTab = 'mine';
+
+function switchHomeTab(tab) {
+  homeTab = tab;
+  document.getElementById('tab-mine-content').style.display = tab==='mine'?'block':'none';
+  document.getElementById('tab-feed-content').style.display = tab==='feed'?'block':'none';
+  const mine = document.getElementById('tab-mine');
+  const feed = document.getElementById('tab-feed');
+  mine.style.background = tab==='mine'?'var(--bg2)':'none';
+  mine.style.color = tab==='mine'?'var(--text)':'var(--muted)';
+  feed.style.background = tab==='feed'?'var(--bg2)':'none';
+  feed.style.color = tab==='feed'?'var(--text)':'var(--muted)';
+  if (tab==='feed') loadSocialFeed();
+}
+
+async function loadSocialFeed() {
+  const el = document.getElementById('social-feed-list'); if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Laden...</div>';
+  try {
+    const links = await db('friends?user_id=eq.' + CU.id + '&status=eq.accepted') || [];
+    if (!links.length) { el.innerHTML = '<div class="empty">Voeg vrienden toe om hun workouts te zien!</div>'; return; }
+    const friendIds = links.map(l => l.friend_id);
+    // Get recent workouts from all friends
+    const allWorkouts = [];
+    for (const fid of friendIds) {
+      const fu = await db('users?id=eq.' + fid + '&limit=1');
+      const fname = fu && fu[0] ? fu[0].name : 'Vriend';
+      const favatar = fu && fu[0] ? fu[0].avatar_url : null;
+      const ws = await db('workouts?user_id=eq.' + fid + '&order=date.desc&limit=5') || [];
+      ws.forEach(w => allWorkouts.push({...w, _fname: fname, _favatar: favatar}));
+    }
+    allWorkouts.sort((a,b) => new Date(b.date)-new Date(a.date));
+    if (!allWorkouts.length) { el.innerHTML = '<div class="empty">Nog geen workouts van vrienden.</div>'; return; }
+    el.innerHTML = '';
+    allWorkouts.slice(0,10).forEach(w => {
+      const m = MUSCLES.find(x=>x.id===w.muscle)||{name:w.muscle,hue:200};
+      const col = `hsl(${m.hue},60%,45%)`;
+      const xpW = (w.sets||[]).reduce((t,s)=>t+setXP(s,s.unit),0);
+      const summary = (w.sets||[]).slice(0,3).map(s=>{
+        const ex=exerciseById(w.muscle,s.exercise); return (ex?ex.name:s.exercise)+' '+(s.unit==='bw'?s.reps+'r':s.reps+'×'+s.weight+'kg');
+      }).join(' · ');
+      const card = document.createElement('div'); card.className='card';
+      card.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--accent);overflow:hidden;background:var(--bg3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:var(--muted)">
+          ${w._favatar?`<img src="${w._favatar}" style="width:100%;height:100%;object-fit:cover">`:(w._fname[0]||'?')}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:.85rem;font-weight:600">${w._fname}</div>
+          <div style="font-size:.72rem;color:var(--muted)">${formatDate(w.date)}</div>
+        </div>
+        <span style="font-size:.72rem;color:${col};font-weight:700">${m.name}</span>
+        <span style="font-size:.72rem;color:var(--accent);font-weight:700">+${xpW}xp</span>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:${w.photo_url?'8px':'0'}">${summary||'—'}</div>
+      ${w.photo_url?`<img src="${w.photo_url}" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;border:1px solid var(--border)"/>`:''}`;
+      el.appendChild(card);
+    });
+  } catch(e) { el.innerHTML = '<div class="empty">Feed kon niet geladen worden.</div>'; console.error(e); }
+}
+
+// ── TEMPLATES ───────────────────────────────────────────────────────────────
+function renderTemplates() {
+  const el = document.getElementById('templates-list'); if (!el) return;
+  const templates = JSON.parse(localStorage.getItem('workout_templates') || '[]');
+  el.innerHTML = '';
+  if (!templates.length) {
+    el.innerHTML = '<div style="font-size:.78rem;color:var(--muted)">Geen templates. Sla een workout op als template!</div>';
+    return;
+  }
+  templates.forEach((t, i) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'background:var(--bg2);border:1px solid var(--accent)44;border-radius:10px;padding:6px 12px;font-size:.78rem;font-weight:600;color:var(--text);cursor:pointer;font-family:var(--font-b)';
+    btn.innerHTML = t.name + ' <span style="color:var(--muted);font-weight:400">(' + t.blocks.length + ')</span>';
+    btn.onclick = () => loadTemplate(i);
+    el.appendChild(btn);
+  });
+}
+
+function saveAsTemplate() {
+  if (!exerciseBlocks.length) { alert('Voeg eerst oefeningen toe!'); return; }
+  const name = prompt('Naam voor deze template?', 'Mijn workout');
+  if (!name) return;
+  const templates = JSON.parse(localStorage.getItem('workout_templates') || '[]');
+  templates.push({ name, blocks: exerciseBlocks.map(b => ({...b, sets: [...b.sets.map(s=>({...s}))]})) });
+  localStorage.setItem('workout_templates', JSON.stringify(templates));
+  renderTemplates();
+  showToast('Template opgeslagen! 📋');
+}
+
+function loadTemplate(i) {
+  const templates = JSON.parse(localStorage.getItem('workout_templates') || '[]');
+  const t = templates[i]; if (!t) return;
+  exerciseBlocks = t.blocks.map(b => ({...b, sets: b.sets.map(s=>({...s}))}));
+  renderAllBlocks();
+  showToast('Template geladen! 💪');
+}
+
+// ── CALENDAR ───────────────────────────────────────────────────────────────
+function renderCalendar() {
+  const grid = document.getElementById('cal-grid');
+  const label = document.getElementById('cal-month-label');
+  const countEl = document.getElementById('cal-count');
+  if (!grid) return;
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const monthNames = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+  label.textContent = monthNames[month] + ' ' + year;
+
+  const trainedDays = new Set(
+    DB_local.workouts
+      .filter(w => { const d = new Date(w.date); return d.getFullYear()===year && d.getMonth()===month; })
+      .map(w => new Date(w.date).getDate())
+  );
+
+  countEl.textContent = trainedDays.size + ' dagen getraind';
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const offset = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = now.getDate();
+
+  grid.innerHTML = '';
+  for (let i = 0; i < offset; i++) {
+    const empty = document.createElement('div');
+    empty.style.aspectRatio = '1';
+    grid.appendChild(empty);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement('div');
+    const trained = trainedDays.has(d);
+    const isToday = d === today;
+    cell.style.cssText = `aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:600;background:${isToday?'var(--accent)':trained?'var(--accent)44':'var(--bg3)'};color:${isToday?'#111':trained?'var(--accent)':'var(--muted)'}`;
+    cell.textContent = d;
+    grid.appendChild(cell);
+  }
+}
+
+// ── LEVEL UP ───────────────────────────────────────────────────────────────
+function checkLevelUp(muscleId, oldXP, newXP) {
+  const oldLv = levelFromXP(oldXP);
+  const newLv = levelFromXP(newXP);
+  if (newLv > oldLv) {
+    const m = MUSCLES.find(x => x.id === muscleId);
+    const tier = tierForLevel(newLv);
+    showLevelUp(newLv, m ? m.name : muscleId, tier);
+  }
+}
+
+function showLevelUp(level, muscleName, tier) {
+  const overlay = document.getElementById('levelup-overlay');
+  document.getElementById('lu-level').textContent = level;
+  document.getElementById('lu-muscle').textContent = muscleName.toUpperCase();
+  document.getElementById('lu-tier-name').textContent = tier.name + ' tier';
+  document.getElementById('lu-tier-name').style.color = tier.color;
+  overlay.style.borderTop = '3px solid ' + tier.color;
+
+  // Fun emoji based on level
+  const emojis = ['💪','🔥','⚡','🏆','👑','🐉','💎'];
+  document.getElementById('lu-emoji').textContent = emojis[Math.min(Math.floor(level/15), emojis.length-1)];
+
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLevelUp() {
+  document.getElementById('levelup-overlay').style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 // ── DARK MODE ──────────────────────────────────────────────────────────────
