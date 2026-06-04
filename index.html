@@ -1020,10 +1020,16 @@ async function renderLeaderboard() {
   try {
     // Get accepted friends only
     const links = await db('friends?user_id=eq.' + CU.id + '&status=eq.accepted') || [];
-    const friendIds = links.map(l => l.friend_id);
+    const myFriendIds = links.map(l => l.friend_id);
 
-    // Build entries: self + friends
-    const allIds = [CU.id, ...friendIds];
+    // Collect all unique people: me + my friends + friends of friends
+    const allIdsSet = new Set([CU.id, ...myFriendIds]);
+    for (const fid of myFriendIds) {
+      const flinks = await db('friends?user_id=eq.' + fid + '&status=eq.accepted') || [];
+      flinks.forEach(l => allIdsSet.add(l.friend_id));
+    }
+    // Remove strangers - only keep people connected to me
+    const allIds = Array.from(allIdsSet);
     const entries = [];
 
     for (const uid of allIds) {
