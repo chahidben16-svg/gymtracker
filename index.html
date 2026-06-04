@@ -443,6 +443,7 @@ let CU = null; // current user
 let DB_local = { xp: {}, workouts: [], user: {} };
 let currentSets = [];
 let activeModal = null;
+let selectedMuscles = [];
 
 const SPLIT = { 1:['borst','triceps','schouders'], 2:['rug','biceps'], 3:['benen','core'], 4:[], 5:['borst','rug'], 6:['biceps','triceps','schouders'], 0:['benen','core'] };
 const DAGEN = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
@@ -595,32 +596,39 @@ function renderChart() {
 
 function renderTodaySplit() {
   const dag = new Date().getDay();
-  const sp = SPLIT[dag] || [];
   const el = document.getElementById('today-split-card'); if (!el) return;
-  if (!sp.length) {
-    el.innerHTML = `<div class="card"><h3 style="margin-bottom:6px">Vandaag · ${DAGEN[dag]}</h3><div style="font-family:var(--font-d);font-size:1.6rem;color:var(--muted)">Rustdag 🛋</div></div>`;
-    return;
-  }
-  const chips = sp.map(id => {
-    const m = MUSCLES.find(x=>x.id===id); if (!m) return '';
+
+  const chips = MUSCLES.map(m => {
     const col = `hsl(${m.hue},60%,45%)`;
-    return `<span style="background:${col}18;border:1px solid ${col}44;border-radius:99px;padding:4px 12px;font-size:.82rem;font-weight:600;color:${col}">${m.name}</span>`;
+    const selected = selectedMuscles.includes(m.id);
+    return `<span onclick="toggleMuscleSelect('${m.id}')" style="cursor:pointer;display:inline-block;background:${selected?col+'33':'var(--bg3)'};border:1px solid ${selected?col:'var(--border)'};border-radius:99px;padding:5px 12px;font-size:.82rem;font-weight:600;color:${selected?col:'var(--muted)'};margin:2px;transition:all .15s">${m.name}</span>`;
   }).join('');
+
   el.innerHTML = `<div class="card" style="border-color:var(--accent)44">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <h3>Vandaag · ${DAGEN[dag]}</h3>
-      <span style="font-size:.7rem;color:var(--accent);font-weight:700">JOUW SPLIT</span>
+      <span style="font-size:.7rem;color:var(--accent);font-weight:700">WAT TRAIN JE?</span>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${chips}</div>
-    <button class="btn btn-primary btn-full" style="padding:11px" onclick="startToday()">💪 Start training</button>
+    <div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:12px">${chips}</div>
+    <button class="btn btn-primary btn-full" style="padding:11px;opacity:${selectedMuscles.length>0?1:.5}" onclick="startToday()">
+      Start training ${selectedMuscles.length>0?'('+selectedMuscles.length+')':'— selecteer spiergroep'}
+    </button>
   </div>`;
 }
 
+function toggleMuscleSelect(muscleId) {
+  if (selectedMuscles.includes(muscleId)) {
+    selectedMuscles = selectedMuscles.filter(id => id !== muscleId);
+  } else {
+    selectedMuscles.push(muscleId);
+  }
+  renderTodaySplit();
+}
+
 function startToday() {
-  const sp = SPLIT[new Date().getDay()] || [];
-  if (!sp.length) return;
+  if (!selectedMuscles.length) return;
   exerciseBlocks = [];
-  sp.forEach(mid => addExerciseBlock(mid));
+  selectedMuscles.forEach(mid => addExerciseBlock(mid));
   goTo('log');
 }
 
