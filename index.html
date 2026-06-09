@@ -658,6 +658,25 @@ function addExerciseBlock(prefillMuscle) {
   renderAllBlocks();
 }
 
+function getLastSets(muscleId, exId) {
+  // Find the most recent workout that contains this exercise
+  const sorted = [...DB_local.workouts].sort((a,b) => new Date(b.date)-new Date(a.date));
+  for (const w of sorted) {
+    const sets = (w.sets||[]).filter(s => s.exercise === exId);
+    if (sets.length > 0) return sets;
+  }
+  return [];
+}
+
+function copyLastSets(bi) {
+  const block = exerciseBlocks[bi];
+  const lastSets = getLastSets(block.muscleId, block.exId);
+  if (!lastSets.length) return;
+  exerciseBlocks[bi].sets = lastSets.map(s => ({...s}));
+  renderAllBlocks();
+  showToast('Vorige sets gekopieerd! 📋');
+}
+
 function renderAllBlocks() {
   const container = document.getElementById('exercise-blocks');
   if (!container) return;
@@ -672,10 +691,16 @@ function renderAllBlocks() {
     div.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)';
 
     // Muscle + exercise selectors
+    // Get last time data for this exercise
+    const lastSets = getLastSets(block.muscleId, block.exId);
+    const lastStr = lastSets.length > 0
+      ? lastSets.slice(0,3).map(s => s.unit==='bw' ? s.reps+'r' : s.unit==='sec' ? s.reps+'s' : s.reps+'×'+s.weight+'kg').join(' · ')
+      : null;
+
     const selRow = document.createElement('div');
-    selRow.style.cssText = 'display:flex;gap:6px;margin-bottom:10px;align-items:center';
+    selRow.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center';
     selRow.innerHTML = `
-      <select style="flex:1;background:var(--bg3);border:1px solid ${col};border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.82rem;padding:8px;outline:none;-webkit-appearance:none;font-weight:600;color:${col}" onchange="changeBlockMuscle(${bi},this.value)">
+      <select style="flex:1;background:var(--bg3);border:1px solid ${col};border-radius:8px;color:${col};font-family:var(--font-b);font-size:.82rem;padding:8px;outline:none;-webkit-appearance:none;font-weight:600" onchange="changeBlockMuscle(${bi},this.value)">
         ${MUSCLES.map(mu => `<option value="${mu.id}" ${mu.id===block.muscleId?'selected':''}>${mu.name}</option>`).join('')}
       </select>
       <select style="flex:2;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.82rem;padding:8px;outline:none;-webkit-appearance:none" onchange="changeExercise(${bi},this.value)">
@@ -686,6 +711,15 @@ function renderAllBlocks() {
         ${exerciseBlocks.length > 1 ? `<button onclick="removeBlock(${bi})" style="background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:2px 4px">✕</button>` : ''}
       </div>`;
     div.appendChild(selRow);
+
+    // Show last time info
+    if (lastStr) {
+      const lastDiv = document.createElement('div');
+      lastDiv.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:6px 10px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--accent)';
+      lastDiv.innerHTML = `<span style="font-size:.72rem;color:var(--muted);font-weight:600">Vorige keer:</span><span style="font-size:.72rem;color:var(--accent);font-weight:700">${lastStr}</span>
+        <button onclick="copyLastSets(${bi})" style="margin-left:auto;background:var(--accent);border:none;border-radius:6px;padding:2px 8px;font-size:.68rem;font-weight:700;color:#111;cursor:pointer;font-family:var(--font-b)">Kopieer</button>`;
+      div.appendChild(lastDiv);
+    }
 
     // Sets
     const setsDiv = document.createElement('div');
